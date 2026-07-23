@@ -1,0 +1,428 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-eco: var(--eco);
+  --color-eco-foreground: var(--eco-foreground);
+  --color-eco-muted: var(--eco-muted);
+  --color-earth: var(--earth);
+  --color-earth-foreground: var(--earth-foreground);
+  --color-earth-muted: var(--earth-muted);
+  --color-ocean: var(--ocean);
+  --color-ocean-foreground: var(--ocean-foreground);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+}
+
+/* ═══════════════════════════════════════════
+   SUSTAINABLE DARK THEME — OLED-friendly deep dark
+   ═══════════════════════════════════════════ */
+:root {
+  --radius: 0;
+  --background: oklch(0.09 0.005 160);
+  --foreground: oklch(0.93 0.01 160);
+  --card: oklch(0.13 0.008 160);
+  --card-foreground: oklch(0.93 0.01 160);
+  --popover: oklch(0.13 0.008 160);
+  --popover-foreground: oklch(0.93 0.01 160);
+  --primary: oklch(0.72 0.17 155);
+  --primary-foreground: oklch(0.12 0.02 160);
+  --secondary: oklch(0.18 0.012 160);
+  --secondary-foreground: oklch(0.88 0.01 160);
+  --muted: oklch(0.17 0.01 160);
+  --muted-foreground: oklch(0.6 0.02 160);
+  --accent: oklch(0.20 0.015 160);
+  --accent-foreground: oklch(0.9 0.01 160);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.22 0.015 160);
+  --input: oklch(0.20 0.012 160);
+  --ring: oklch(0.72 0.17 155);
+
+  /* Custom semantic tokens */
+  --eco: oklch(0.72 0.17 155);
+  --eco-foreground: oklch(0.12 0.02 160);
+  --eco-muted: oklch(0.72 0.17 155 / 15%);
+  --earth: oklch(0.75 0.12 75);
+  --earth-foreground: oklch(0.12 0.02 75);
+  --earth-muted: oklch(0.75 0.12 75 / 15%);
+  --ocean: oklch(0.65 0.1 230);
+  --ocean-foreground: oklch(0.95 0.01 230);
+
+  --chart-1: oklch(0.72 0.17 155);
+  --chart-2: oklch(0.75 0.12 75);
+  --chart-3: oklch(0.65 0.1 230);
+  --chart-4: oklch(0.68 0.15 320);
+  --chart-5: oklch(0.70 0.14 45);
+
+  --sidebar: oklch(0.11 0.007 160);
+  --sidebar-foreground: oklch(0.9 0.01 160);
+  --sidebar-primary: oklch(0.72 0.17 155);
+  --sidebar-primary-foreground: oklch(0.12 0.02 160);
+  --sidebar-accent: oklch(0.18 0.012 160);
+  --sidebar-accent-foreground: oklch(0.9 0.01 160);
+  --sidebar-border: oklch(0.22 0.015 160);
+  --sidebar-ring: oklch(0.72 0.17 155);
+}
+
+/* ═══════════════════════════════════════════
+   LINEAR DESIGN — NO RECTANGLES, ONLY LINES
+   ═══════════════════════════════════════════ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Macro-typography selection */
+::selection {
+  background: oklch(0.72 0.17 155 / 25%);
+  color: oklch(0.95 0.01 160);
+}
+
+/* Override all shadcn card backgrounds — transparent */
+@layer components {
+  [class*="card"],
+  [data-slot="card"],
+  [data-radix-collection-item] {
+    background: transparent;
+  }
+}
+
+/* ── Line-based accent utilities ── */
+.line-accent {
+  border-left: 2px solid oklch(0.72 0.17 155);
+  padding-left: 1rem;
+}
+
+.line-accent-earth {
+  border-left: 2px solid oklch(0.75 0.12 75);
+  padding-left: 1rem;
+}
+
+.line-accent-ocean {
+  border-left: 2px solid oklch(0.65 0.1 230);
+  padding-left: 1rem;
+}
+
+.line-bottom {
+  border-bottom: 1px solid oklch(1.0 0 0 / 8%);
+}
+
+.line-top {
+  border-top: 1px solid oklch(1.0 0 0 / 8%);
+}
+
+.line-hover:hover {
+  border-left-color: oklch(0.75 0.12 75);
+}
+
+/* ── Skew decorative elements ── */
+.skew-bg {
+  transform: skewX(-12deg);
+}
+
+.skew-bg-inner {
+  transform: skewX(12deg);
+}
+
+/* ── Diagonal line decorations ── */
+.diagonal-stripe {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    oklch(1.0 0 0 / 3%),
+    oklch(1.0 0 0 / 3%) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
+/* ── Line glow (no box shadow, just line glow) ── */
+.line-glow-eco {
+  text-shadow: 0 0 12px oklch(0.72 0.17 155 / 40%);
+}
+
+/* ═══════════════════════════════════════════
+   BACKGROUND — ultra-minimal for macro-typography
+   ═══════════════════════════════════════════ */
+.organic-bg {
+  background:
+    linear-gradient(180deg, oklch(0.72 0.17 155 / 3%) 0%, transparent 30%),
+    oklch(0.09 0.005 160);
+}
+
+/* ═══════════════════════════════════════════
+   CUSTOM SCROLLBAR
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.72 0.17 155 / 20%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.72 0.17 155 / 40%);
+}
+
+/* ═══════════════════════════════════════════
+   SMOOTH SCROLL
+   ═══════════════════════════════════════════ */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL-REVEAL ANIMATIONS
+   ═══════════════════════════════════════════ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+              transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+[data-reveal="left"] {
+  transform: translateX(-24px);
+}
+
+[data-reveal="right"] {
+  transform: translateX(24px);
+}
+
+[data-reveal="scale"] {
+  transform: scale(0.95);
+}
+
+[data-reveal].revealed {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1);
+}
+
+/* Stagger children */
+[data-reveal-stagger] > [data-reveal]:nth-child(1) { transition-delay: 0.00s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(2) { transition-delay: 0.06s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(3) { transition-delay: 0.12s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(4) { transition-delay: 0.18s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(5) { transition-delay: 0.24s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(6) { transition-delay: 0.30s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(7) { transition-delay: 0.36s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(8) { transition-delay: 0.42s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(n+9) { transition-delay: 0.48s; }
+
+/* ═══════════════════════════════════════════
+   HOVER EFFECTS
+   ═══════════════════════════════════════════ */
+.hover-underline {
+  position: relative;
+}
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hover-underline:hover::after {
+  width: 100%;
+}
+
+.hover-slide-right {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+              opacity 0.3s ease;
+}
+.hover-slide-right:hover {
+  transform: translateX(4px);
+}
+
+.hover-glow:hover {
+  text-shadow: 0 0 16px oklch(0.72 0.17 155 / 50%);
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
+@keyframes pulse-eco {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes line-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-pulse-eco {
+  animation: pulse-eco 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+.animate-line-scan {
+  animation: line-scan 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   BROKEN-LINE DECORATIONS — VLM/Design System accent
+   ═══════════════════════════════════════════ */
+.broken-line-border {
+  border: 1px dashed oklch(0.72 0.17 155 / 15%);
+}
+
+.broken-line-left {
+  border-left: 2px dashed oklch(0.72 0.17 155 / 30%);
+  padding-left: 1rem;
+}
+
+.broken-line-bottom {
+  border-bottom: 1px dashed oklch(1.0 0 0 / 10%);
+}
+
+.broken-line-top {
+  border-top: 1px dashed oklch(1.0 0 0 / 10%);
+}
+
+.broken-line-corner {
+  position: relative;
+}
+.broken-line-corner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  border-top: 2px solid oklch(0.72 0.17 155 / 40%);
+  border-left: 2px solid oklch(0.72 0.17 155 / 40%);
+  pointer-events: none;
+}
+.broken-line-corner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border-bottom: 2px solid oklch(0.72 0.17 155 / 40%);
+  border-right: 2px solid oklch(0.72 0.17 155 / 40%);
+  pointer-events: none;
+}
+
+/* Cross-hatch broken line pattern for design system sections */
+.broken-crosshatch {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      oklch(0.72 0.17 155 / 4%),
+      oklch(0.72 0.17 155 / 4%) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      oklch(0.72 0.17 155 / 4%),
+      oklch(0.72 0.17 155 / 4%) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+}
+
+/* Scan line effect for VLM analysis */
+.scan-line-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.scan-line-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, oklch(0.72 0.17 155 / 60%), transparent);
+  animation: scan-line 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes scan-line {
+  0% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Prose overrides for dark theme (react-markdown) */
+.prose pre {
+  border: 1px solid oklch(1.0 0 0 / 8%);
+}
+.prose code::before,
+.prose code::after {
+  content: '';
+}
+
+/* ═══════════════════════════════════════════
+   GLOBAL — NO ROUNDED CORNERS
+   ═══════════════════════════════════════════ */
+*, *::before, *::after {
+  border-radius: 0 !important;
+}
