@@ -290,14 +290,21 @@ export async function POST(request: NextRequest) {
         });
 
         try {
-          const vlmResponse = await zai.functions.invoke("image_understanding", {
-            image: extractedImageBase64,
-            prompt: VLM_ANALYSIS_PROMPT,
+          const vlmResponse = await zai.chat.completions.createVision({
+            model: "default",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "image_url", image_url: { url: extractedImageBase64 } },
+                  { type: "text", text: VLM_ANALYSIS_PROMPT },
+                ],
+              },
+            ],
+            thinking: { type: "disabled" },
           });
 
-          const vlmText = typeof vlmResponse === "string"
-            ? vlmResponse
-            : vlmResponse?.data?.text || vlmResponse?.text || JSON.stringify(vlmResponse);
+          const vlmText = vlmResponse?.choices?.[0]?.message?.content || "";
 
           if (vlmText) {
             const jsonStr = extractJson(vlmText);
