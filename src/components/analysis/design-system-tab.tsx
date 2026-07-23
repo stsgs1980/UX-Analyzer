@@ -207,6 +207,7 @@ function PatternsSection({ patterns }: { patterns?: VlmPatterns }) {
 
 export function DesignSystemTab({ data }: { data: AnalysisResult }) {
   const designMdContent = useAnalysisStore((s) => s.designMdContent) || data.designMd;
+  const imageBase64 = useAnalysisStore((s) => s.imageBase64);
   const vlm = data.vlmAnalysis;
 
   if (!vlm && !designMdContent) {
@@ -220,8 +221,8 @@ export function DesignSystemTab({ data }: { data: AnalysisResult }) {
     );
   }
 
-  // Image preview
-  const imagePreview = data.imagePreviewUrl || data.extractedImageUrl;
+  // Image preview: prefer extracted URL, fall back to uploaded base64 from store
+  const imagePreview = data.extractedImageUrl || imageBase64;
 
   return (
     <div className="space-y-6">

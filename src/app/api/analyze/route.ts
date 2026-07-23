@@ -19,6 +19,16 @@ interface SearchResult {
   snippet: string;
 }
 
+// ── Timeout helper ──
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 /** Safely run a DB operation, returning null on failure. */
 async function dbSafe<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -131,7 +141,9 @@ export async function POST(request: NextRequest) {
       )
     : null;
 
-  // Run analysis asynchronously
+  // ════════════════════════════════════════════════════════════════
+  //  MAIN PIPELINE — runs async, streams progress via SSE
+  // ════════════════════════════════════════════════════════════════
   (async () => {
     const zai = await ZAI.create();
     const pageContents: PageContent[] = [];
@@ -140,193 +152,152 @@ export async function POST(request: NextRequest) {
     let extractedImageUrl: string | null = null;
     let vlmResult: VlmAnalysisResult | null = null;
     let designMdContent: string | null = null;
+    const dataSources: string[] = [];
 
     try {
-      // ═══════════ STEP 0: Pinterest oEmbed (if Pinterest URL) ═══════════
+      // ═══ STEP 0: Pinterest oEmbed ═══
       if (pinterestSource && hasUrls) {
-        send({
-          type: "progress",
-          step: "pinterest",
-          message: "Извлекаю данные из Pinterest...",
-          progress: 0.05,
-          analysisId: analysis?.id,
-        });
+        send({ type: "progress", step: "pinterest", message: "Извлекаю данные из Pinterest...", progress: 0.05, analysisId: analysis?.id });
 
         for (const url of urls!) {
           if (isPinterestPin(url)) {
-            const pinData = await fetchPinterestOembed(url);
-            if (pinData) {
-              pinterestData = {
-                title: pinData.title,
-                authorName: pinData.authorName,
-                thumbnailUrl: pinData.thumbnailUrl,
-              };
-              // Download the pin image for VLM
-              if (pinData.thumbnailUrl) {
-                const imgBase64 = await downloadImageAsBase64(pinData.thumbnailUrl);
-                if (imgBase64) {
-                  extractedImageBase64 = imgBase64;
-                  extractedImageUrl = pinData.thumbnailUrl;
+            try {
+              const pinData = await withTimeout(fetchPinterestOembed(url), 8000, "Pinterest oEmbed");
+              if (pinData) {
+                pinterestData = { title: pinData.title, authorName: pinData.authorName, thumbnailUrl: pinData.thumbnailUrl };
+                if (pinData.thumbnailUrl) {
+                  const imgBase64 = await withTimeout(downloadImageAsBase64(pinData.thumbnailUrl), 15000, "Pinterest image");
+                  if (imgBase64) { extractedImageBase64 = imgBase64; extractedImageUrl = pinData.thumbnailUrl; }
+                  dataSources.push("pinterest");
                 }
               }
-              break;
+            } catch (e) {
+              console.warn("[pinterest] Failed:", e);
             }
+            break;
           }
         }
       }
 
-      // ═══════════ STEP 0b: Use uploaded image ═══════════
+      // ═══ STEP 0b: Uploaded image ═══
       if (hasImageUpload && imageBase64) {
         extractedImageBase64 = imageBase64;
+        dataSources.push("image_upload");
       }
 
-      // ═══════════ STEP 0c: Download image from URL (if not Pinterest and not upload) ═══════════
+      // ═══ STEP 0c: Direct image URL ═══
       if (!extractedImageBase64 && hasUrls && !pinterestSource) {
-        // Try to download the first URL as an image (direct image URLs)
         const firstUrl = urls![0];
         const isImageUrl = /\.(png|jpg|jpeg|gif|webp|svg|bmp|ico)(\?.*)?$/i.test(firstUrl);
         if (isImageUrl) {
-          send({
-            type: "progress",
-            step: "downloading_image",
-            message: "Скачиваю изображение...",
-            progress: 0.08,
-            analysisId: analysis?.id,
-          });
-          const imgBase64 = await downloadImageAsBase64(firstUrl);
-          if (imgBase64) {
-            extractedImageBase64 = imgBase64;
-            extractedImageUrl = firstUrl;
+          send({ type: "progress", step: "downloading_image", message: "Скачиваю изображение...", progress: 0.08, analysisId: analysis?.id });
+          try {
+            const imgBase64 = await withTimeout(downloadImageAsBase64(firstUrl), 15000, "Image download");
+            if (imgBase64) { extractedImageBase64 = imgBase64; extractedImageUrl = firstUrl; dataSources.push("image_url"); }
+          } catch (e) {
+            console.warn("[image] Download failed:", e);
           }
         }
       }
 
-      // ═══════════ STEP 1: Fetch page content via page_reader ═══════════
+      // ═══ STEP 1+2: Fetch pages AND search IN PARALLEL ═══
       if (hasUrls && !hasImageUpload) {
-        send({
-          type: "progress",
-          step: "fetching",
-          message: "Собираю данные со страниц...",
-          progress: 0.12,
-          analysisId: analysis?.id,
-        });
+        send({ type: "progress", step: "fetching", message: "Собираю данные (параллельно)...", progress: 0.12, analysisId: analysis?.id });
 
-        const fetchPromises = urls!.map(async (url) => {
-          try {
-            const result = await zai.functions.invoke("page_reader", { url });
-            const htmlContent = result.data?.html || "";
-            const plainText = htmlContent
-              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-              .replace(/<[^>]*>/g, " ")
-              .replace(/\s+/g, " ")
-              .trim();
+        const [fetchOutcome, searchOutcome] = await Promise.allSettled([
+          // --- page_reader for all URLs ---
+          (async () => {
+            const results = await Promise.allSettled(
+              urls!.map(url =>
+                withTimeout(
+                  zai.functions.invoke("page_reader", { url }).then(r => ({
+                    url,
+                    title: r.data?.title || "Без заголовка",
+                    content: (r.data?.html || "")
+                      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+                      .replace(/<[^>]*>/g, " ")
+                      .replace(/\s+/g, " ")
+                      .trim(),
+                  })),
+                  15000,
+                  `page_reader(${url})`
+                ).catch(err => ({ url, title: "Недоступно", content: "", error: err instanceof Error ? err.message : "timeout" }))
+              )
+            );
+            return results.filter((r): r is PromiseFulfilledResult<PageContent> => r.status === "fulfilled").map(r => r.value);
+          })(),
+          // --- web_search for first 2 URLs ---
+          (async () => {
+            const results = await Promise.allSettled(
+              urls!.slice(0, 2).map(async url => {
+                const hostname = new URL(url).hostname;
+                const query = `${hostname} design UI UX review`;
+                const items = await withTimeout(
+                  zai.functions.invoke("web_search", { query, num: 3 }),
+                  10000,
+                  `web_search(${hostname})`
+                );
+                return ((items || []) as Array<{ url: string; name: string; snippet: string }>)
+                  .slice(0, 2)
+                  .map(r => ({ url: r.url, title: r.name, snippet: r.snippet }));
+              })
+            );
+            return results
+              .filter((r): r is PromiseFulfilledResult<SearchResult[]> => r.status === "fulfilled")
+              .flatMap(r => r.value);
+          })(),
+        ]);
 
-            return {
-              url,
-              title: result.data?.title || "Без заголовка",
-              content: plainText,
-            } as PageContent;
-          } catch (error) {
-            const msg = error instanceof Error ? error.message : "Unknown error";
-            return { url, title: "Недоступно", content: "", error: msg } as PageContent;
-          }
-        });
+        if (fetchOutcome.status === "fulfilled") pageContents.push(...fetchOutcome.value);
+        if (pageContents.some(p => !p.error)) dataSources.push("page_reader");
+        if (searchOutcome.status === "fulfilled" && searchOutcome.value.length > 0) dataSources.push("web_search");
 
-        const fetchResults = await Promise.allSettled(fetchPromises);
-        for (const r of fetchResults) {
-          if (r.status === "fulfilled") pageContents.push(r.value);
-        }
-
-        // Step 2: Web search for additional context
-        send({
-          type: "progress",
-          step: "searching",
-          message: "Ищу дополнительный контекст...",
-          progress: 0.25,
-          analysisId: analysis?.id,
-        });
-
-        const searchPromises = urls!.slice(0, 3).map(async (url) => {
-          try {
-            const hostname = new URL(url).hostname;
-            const query = `${hostname} design UI UX review analysis`;
-            const results = await zai.functions.invoke("web_search", { query, num: 5 });
-            return (results || [])
-              .slice(0, 3)
-              .map((r: { url: string; name: string; snippet: string }) => ({
-                url: r.url,
-                title: r.name,
-                snippet: r.snippet,
-              })) as SearchResult[];
-          } catch {
-            return [] as SearchResult[];
-          }
-        });
-
-        const searchFetchResults = await Promise.allSettled(searchPromises);
-        for (const r of searchFetchResults) {
-          if (r.status === "fulfilled") searchResults.push(...r.value);
-        }
+        send({ type: "progress", step: "searching", message: `Собрано: ${pageContents.length} страниц, ${searchResults.length} результатов поиска`, progress: 0.30, analysisId: analysis?.id });
       } else if (hasImageUpload) {
-        // Skip page fetching for image upload mode
-        send({
-          type: "progress",
-          step: "fetching",
-          message: "Изображение получено...",
-          progress: 0.15,
-          analysisId: analysis?.id,
-        });
+        send({ type: "progress", step: "fetching", message: "Изображение получено...", progress: 0.20, analysisId: analysis?.id });
       }
 
-      // ═══════════ STEP 2b: VLM visual analysis (if image available) ═══════════
+      // ═══ STEP 2b: VLM visual analysis ═══
       if (extractedImageBase64) {
-        send({
-          type: "progress",
-          step: "downloading_image",
-          message: "Анализирую изображение через VLM...",
-          progress: 0.35,
-          analysisId: analysis?.id,
-        });
+        send({ type: "progress", step: "downloading_image", message: "Анализирую изображение через VLM...", progress: 0.40, analysisId: analysis?.id });
 
         try {
-          const vlmResponse = await zai.chat.completions.createVision({
-            model: "default",
-            messages: [
-              {
+          const vlmResponse = await withTimeout(
+            zai.chat.completions.createVision({
+              model: "default",
+              messages: [{
                 role: "user",
                 content: [
                   { type: "image_url", image_url: { url: extractedImageBase64 } },
                   { type: "text", text: VLM_ANALYSIS_PROMPT },
                 ],
-              },
-            ],
-            thinking: { type: "disabled" },
-          });
+              }],
+              thinking: { type: "disabled" },
+            }),
+            30000,
+            "VLM analysis"
+          );
 
           const vlmText = vlmResponse?.choices?.[0]?.message?.content || "";
-
           if (vlmText) {
             const jsonStr = extractJson(vlmText);
             try {
               vlmResult = JSON.parse(jsonStr) as VlmAnalysisResult;
+              dataSources.push("vlm");
             } catch {
               console.warn("[vlm] Failed to parse VLM response");
             }
           }
         } catch (e) {
-          console.warn("[vlm] Image understanding failed:", e);
+          console.warn("[vlm] Failed:", e instanceof Error ? e.message : e);
         }
+      } else {
+        dataSources.push("url_only");
       }
 
-      // ═══════════ STEP 3: Build prompt and call LLM ═══════════
-      send({
-        type: "progress",
-        step: "analyzing",
-        message: "Запускаю AI-анализ (8 методологий)...",
-        progress: 0.45,
-        analysisId: analysis?.id,
-      });
+      // ═══ STEP 3: Main LLM analysis ═══
+      send({ type: "progress", step: "analyzing", message: "Запускаю AI-анализ (8 методологий)...", progress: 0.55, analysisId: analysis?.id });
 
       const prompt = buildAnalysisPrompt(
         hasImageUpload ? [] : urls!,
@@ -337,24 +308,22 @@ export async function POST(request: NextRequest) {
         imageFileName || undefined
       );
 
-      const completion = await zai.chat.completions.create({
-        messages: [
-          { role: "assistant", content: "" },
-          { role: "user", content: prompt },
-        ],
-        thinking: { type: "disabled" },
-      });
+      const completion = await withTimeout(
+        zai.chat.completions.create({
+          messages: [
+            { role: "assistant", content: "" },
+            { role: "user", content: prompt },
+          ],
+          thinking: { type: "disabled" },
+        }),
+        60000,
+        "LLM analysis"
+      );
 
       let responseText = completion.choices[0]?.message?.content || "";
 
-      // Step 4: Parse JSON from response
-      send({
-        type: "progress",
-        step: "parsing",
-        message: "Обрабатываю результаты...",
-        progress: 0.8,
-        analysisId: analysis?.id,
-      });
+      // ═══ STEP 4: Parse JSON ═══
+      send({ type: "progress", step: "parsing", message: "Обрабатываю результаты...", progress: 0.82, analysisId: analysis?.id });
 
       const jsonStr = extractJson(responseText);
 
@@ -367,46 +336,28 @@ export async function POST(request: NextRequest) {
           url: urls?.[0],
           parseError: "Не удалось разобрать JSON-ответ от LLM",
           rawResponse: responseText.substring(0, 2000),
-          meta: {
-            dataSources: pageContents.length > 0
-              ? ["page_reader", "web_search"]
-              : hasImageUpload
-              ? ["image_upload"]
-              : ["url_only"],
-            confidence: "low",
-            caveats: ["Ошибка парсинга JSON"],
-          },
         };
       }
 
-      // Merge VLM results into the analysis result
+      // Merge VLM results
       if (vlmResult) {
         analysisResult.vlmAnalysis = vlmResult;
-        if (!analysisResult.meta) analysisResult.meta = {};
-        const meta = analysisResult.meta as Record<string, unknown>;
-        const ds = (meta.dataSources as string[]) || [];
-        if (!ds.includes("vlm")) ds.push("vlm");
-        meta.dataSources = ds;
       }
 
-      // Add source metadata
+      // Add source metadata (DO NOT store full base64 in result)
       analysisResult.sourceType = sourceType;
+      analysisResult.meta = {
+        dataSources,
+        confidence: pageContents.length > 0 || vlmResult ? "medium" : "low",
+      };
       if (extractedImageUrl) analysisResult.extractedImageUrl = extractedImageUrl;
       if (pinterestData) analysisResult.pinterestData = pinterestData;
-      if (hasImageUpload && extractedImageBase64) {
-        // Send a small preview URL (truncated base64 for preview)
-        analysisResult.imagePreviewUrl = extractedImageBase64;
-      }
+      // Only store image preview if it's a URL, not base64
+      if (extractedImageUrl) analysisResult.imagePreviewUrl = extractedImageUrl;
 
-      // ═══════════ STEP 5: Generate DESIGN.md (if VLM data available) ═══════════
+      // ═══ STEP 5: DESIGN.md (only if VLM succeeded) ═══
       if (vlmResult) {
-        send({
-          type: "progress",
-          step: "vlm_analysis",
-          message: "Генерирую DESIGN.md...",
-          progress: 0.88,
-          analysisId: analysis?.id,
-        });
+        send({ type: "progress", step: "vlm_analysis", message: "Генерирую DESIGN.md...", progress: 0.88, analysisId: analysis?.id });
 
         try {
           const sourceDescription = pinterestData
@@ -417,28 +368,28 @@ export async function POST(request: NextRequest) {
 
           const designMdPrompt = buildDesignMdPrompt(vlmResult, sourceDescription);
 
-          const designMdCompletion = await zai.chat.completions.create({
-            messages: [
-              { role: "assistant", content: "" },
-              { role: "user", content: designMdPrompt },
-            ],
-            thinking: { type: "disabled" },
-          });
+          const designMdCompletion = await withTimeout(
+            zai.chat.completions.create({
+              messages: [
+                { role: "assistant", content: "" },
+                { role: "user", content: designMdPrompt },
+              ],
+              thinking: { type: "disabled" },
+            }),
+            30000,
+            "DESIGN.md generation"
+          );
 
           designMdContent = designMdCompletion.choices[0]?.message?.content || "";
           analysisResult.designMd = designMdContent;
 
-          send({
-            type: "design_md",
-            content: designMdContent,
-            analysisId: analysis?.id,
-          });
+          send({ type: "design_md", content: designMdContent, analysisId: analysis?.id });
         } catch (e) {
-          console.warn("[design-md] Generation failed:", e);
+          console.warn("[design-md] Failed:", e instanceof Error ? e.message : e);
         }
       }
 
-      // Step 6: Save to DB
+      // ═══ STEP 6: Save to DB ═══
       if (db && analysis) {
         await dbSafe(() =>
           db!.analysis.update({
@@ -453,22 +404,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      send({
-        type: "progress",
-        step: "done",
-        message: "Анализ завершён!",
-        progress: 1,
-        analysisId: analysis?.id,
-      });
-
-      send({
-        type: "result",
-        data: analysisResult,
-        analysisId: analysis?.id,
-      });
+      send({ type: "progress", step: "done", message: "Анализ завершён!", progress: 1, analysisId: analysis?.id });
+      send({ type: "result", data: analysisResult, analysisId: analysis?.id });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      console.error("Analysis error:", errorMsg);
+      console.error("[analyze] Pipeline error:", errorMsg);
 
       if (db && analysis) {
         await dbSafe(() =>
@@ -479,11 +419,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      send({
-        type: "error",
-        message: `Ошибка анализа: ${errorMsg}`,
-        analysisId: analysis?.id,
-      });
+      send({ type: "error", message: `Ошибка анализа: ${errorMsg}`, analysisId: analysis?.id });
     } finally {
       await writer.close();
     }

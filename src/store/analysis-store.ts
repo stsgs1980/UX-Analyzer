@@ -134,7 +134,6 @@ export interface AnalysisResult {
     authorName: string;
     thumbnailUrl: string;
   } | null;
-  imagePreviewUrl?: string | null;
 }
 
 interface HistoryItem {
