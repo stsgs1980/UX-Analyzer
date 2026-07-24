@@ -7,3 +7,5 @@ tool-results/
 upload/
 .env
 .env.local
+.z-ai-config
+prisma/prisma/

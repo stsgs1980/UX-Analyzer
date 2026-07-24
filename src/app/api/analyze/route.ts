@@ -29,6 +29,21 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+/** Extract user-friendly message from ZAI SDK errors. */
+function friendlyZaiError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("insufficient_balance")) return "Недостаточно средств на балансе ZAI. Пополните баланс и попробуйте снова.";
+  if (msg.includes("timed out")) return msg;
+  if (msg.includes("API request failed")) {
+    try {
+      const jsonStr = msg.substring(msg.indexOf("{"));
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.error?.message) return `Ошибка API: ${parsed.error.message}`;
+    } catch {}
+  }
+  return msg;
+}
+
 /** Safely run a DB operation, returning null on failure. */
 async function dbSafe<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
@@ -145,7 +160,15 @@ export async function POST(request: NextRequest) {
   //  MAIN PIPELINE — runs async, streams progress via SSE
   // ════════════════════════════════════════════════════════════════
   (async () => {
-    const zai = await ZAI.create();
+    let zai;
+    try {
+      zai = await ZAI.create();
+    } catch (e) {
+      console.error("[analyze] ZAI create failed:", e);
+      send({ type: "error", message: `Ошибка инициализации AI: ${e instanceof Error ? e.message : e}` });
+      await writer.close();
+      return;
+    }
     const pageContents: PageContent[] = [];
     const searchResults: SearchResult[] = [];
     let extractedImageBase64: string | null = null;
@@ -255,6 +278,7 @@ export async function POST(request: NextRequest) {
           searchResults.push(...searchOutcome.value);
           dataSources.push("web_search");
         }
+
 
         send({ type: "progress", step: "searching", message: `Собрано: ${pageContents.length} страниц, ${searchResults.length} результатов поиска`, progress: 0.30, analysisId: analysis?.id });
       } else if (hasImageUpload) {
@@ -408,7 +432,7 @@ export async function POST(request: NextRequest) {
       send({ type: "progress", step: "done", message: "Анализ завершён!", progress: 1, analysisId: analysis?.id });
       send({ type: "result", data: analysisResult, analysisId: analysis?.id });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      const errorMsg = friendlyZaiError(error);
       console.error("[analyze] Pipeline error:", errorMsg);
 
       if (db && analysis) {
@@ -420,7 +444,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      send({ type: "error", message: `Ошибка анализа: ${errorMsg}`, analysisId: analysis?.id });
+      send({ type: "error", message: errorMsg, analysisId: analysis?.id });
     } finally {
       await writer.close();
     }
