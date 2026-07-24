@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
             "VLM analysis"
           );
 
-          const vlmText = vlmResponse?.choices?.[0]?.message?.content || "";
+          const vlmText = (vlmResponse as any)?.choices?.[0]?.message?.content || "";
           if (vlmText) {
             const jsonStr = extractJson(vlmText);
             try {
@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
         "LLM analysis"
       );
 
-      let responseText = completion?.choices?.[0]?.message?.content || "";
+      let responseText = (completion as any)?.choices?.[0]?.message?.content || "";
 
       // ═══ STEP 4: Parse JSON ═══
       send({ type: "progress", step: "parsing", message: "Обрабатываю результаты...", progress: 0.82, analysisId: analysis?.id });
@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
             "DESIGN.md generation"
           );
 
-          designMdContent = designMdCompletion?.choices?.[0]?.message?.content || "";
+          designMdContent = (designMdCompletion as any)?.choices?.[0]?.message?.content || "";
           analysisResult.designMd = designMdContent;
 
           send({ type: "design_md", content: designMdContent, analysisId: analysis?.id });
