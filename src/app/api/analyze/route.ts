@@ -251,7 +251,10 @@ export async function POST(request: NextRequest) {
 
         if (fetchOutcome.status === "fulfilled") pageContents.push(...fetchOutcome.value);
         if (pageContents.some(p => !p.error)) dataSources.push("page_reader");
-        if (searchOutcome.status === "fulfilled" && searchOutcome.value.length > 0) dataSources.push("web_search");
+        if (searchOutcome.status === "fulfilled" && searchOutcome.value.length > 0) {
+          searchResults.push(...searchOutcome.value);
+          dataSources.push("web_search");
+        }
 
         send({ type: "progress", step: "searching", message: `Собрано: ${pageContents.length} страниц, ${searchResults.length} результатов поиска`, progress: 0.30, analysisId: analysis?.id });
       } else if (hasImageUpload) {
@@ -311,16 +314,15 @@ export async function POST(request: NextRequest) {
       const completion = await withTimeout(
         zai.chat.completions.create({
           messages: [
-            { role: "assistant", content: "" },
             { role: "user", content: prompt },
           ],
           thinking: { type: "disabled" },
         }),
-        60000,
+        120000,
         "LLM analysis"
       );
 
-      let responseText = completion.choices[0]?.message?.content || "";
+      let responseText = completion?.choices?.[0]?.message?.content || "";
 
       // ═══ STEP 4: Parse JSON ═══
       send({ type: "progress", step: "parsing", message: "Обрабатываю результаты...", progress: 0.82, analysisId: analysis?.id });
@@ -371,7 +373,6 @@ export async function POST(request: NextRequest) {
           const designMdCompletion = await withTimeout(
             zai.chat.completions.create({
               messages: [
-                { role: "assistant", content: "" },
                 { role: "user", content: designMdPrompt },
               ],
               thinking: { type: "disabled" },
@@ -380,7 +381,7 @@ export async function POST(request: NextRequest) {
             "DESIGN.md generation"
           );
 
-          designMdContent = designMdCompletion.choices[0]?.message?.content || "";
+          designMdContent = designMdCompletion?.choices?.[0]?.message?.content || "";
           analysisResult.designMd = designMdContent;
 
           send({ type: "design_md", content: designMdContent, analysisId: analysis?.id });
