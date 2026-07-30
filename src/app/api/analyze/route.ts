@@ -220,13 +220,17 @@ export async function POST(request: NextRequest) {
           if (isPinterestPin(url)) {
             try {
               const pinData = await withTimeout(fetchPinterestOembed(url), 8000, "Pinterest oEmbed");
+              console.log("[pinterest] oEmbed result:", pinData ? `OK (title: ${pinData.title}, thumb: ${pinData.thumbnailUrl?.substring(0, 80)}...)` : "NULL");
               if (pinData) {
                 pinterestData = { title: pinData.title, authorName: pinData.authorName, thumbnailUrl: pinData.thumbnailUrl };
                 if (pinData.thumbnailUrl) {
                   send({ type: "progress", step: "pinterest", message: `Скачиваю обложку: ${pinData.title || 'пин'}...`, progress: 0.10, analysisId: analysis?.id });
                   const imgBase64 = await withTimeout(downloadImageAsBase64(pinData.thumbnailUrl), 15000, "Pinterest image");
+                  console.log("[pinterest] image download:", imgBase64 ? `OK (${Math.round(imgBase64.length / 1024)}KB base64)` : "FAILED");
                   if (imgBase64) { extractedImageBase64 = imgBase64; extractedImageUrl = pinData.thumbnailUrl; }
                   dataSources.push("pinterest");
+                } else {
+                  console.warn("[pinterest] No thumbnailUrl in oEmbed response");
                 }
               }
             } catch (e) {
@@ -327,6 +331,7 @@ export async function POST(request: NextRequest) {
         send({ type: "progress", step: "vlm", message: "Распознаю визуальный дизайн: цвета, типографику, компоновку...", progress: 0.38, analysisId: analysis?.id });
 
         try {
+          console.log("[vlm] Starting VLM analysis, image size:", Math.round((extractedImageBase64!.length * 3) / 4 / 1024), "KB");
           const vlmResponse = await withTimeout(
             zai.chat.completions.createVision({
               model: "default",
@@ -344,14 +349,18 @@ export async function POST(request: NextRequest) {
           );
 
           const vlmText = (vlmResponse as any)?.choices?.[0]?.message?.content || "";
+          console.log("[vlm] Response length:", vlmText.length, vlmText ? "(has content)" : "(EMPTY!)");
           if (vlmText) {
             const jsonStr = extractJson(vlmText);
+            console.log("[vlm] Extracted JSON length:", jsonStr.length, "first 100 chars:", jsonStr.substring(0, 100));
             try {
               vlmResult = JSON.parse(jsonStr) as VlmAnalysisResult;
               dataSources.push("vlm");
+              console.log("[vlm] Parsed OK, keys:", Object.keys(vlmResult));
               send({ type: "progress", step: "vlm", message: "Визуальный анализ завершён", progress: 0.48, analysisId: analysis?.id });
-            } catch {
-              console.warn("[vlm] Failed to parse VLM response");
+            } catch (parseErr) {
+              console.warn("[vlm] Failed to parse VLM response:", parseErr);
+              console.warn("[vlm] Raw JSON that failed:", jsonStr.substring(0, 500));
             }
           }
         } catch (e) {
@@ -437,6 +446,7 @@ export async function POST(request: NextRequest) {
       // ═══ STEP 5: DESIGN.md (only if VLM succeeded) ═══
       if (vlmResult) {
         send({ type: "progress", step: "design_md", message: "Создаю DESIGN.md на основе визуального анализа...", progress: 0.88, analysisId: analysis?.id });
+        console.log("[design-md] VLM result available, generating DESIGN.md...");
 
         try {
           const sourceDescription = pinterestData
@@ -465,8 +475,13 @@ export async function POST(request: NextRequest) {
         } catch (e) {
           const errMsg = e instanceof Error ? e.message : String(e);
           console.warn("[design-md] Failed:", errMsg);
-          // Non-fatal: analysis result is still valid without DESIGN.md
+          send({ type: "warn", message: `DESIGN.md не сгенерирован: ${errMsg}`, analysisId: analysis?.id });
         }
+      } else {
+        console.log("[design-md] Skipped: vlmResult is", vlmResult);
+        // Notify user that DESIGN.md won't be generated
+        const reason = extractedImageBase64 ? "VLM не смог проанализировать изображение" : "Нет изображения для визуального анализа";
+        send({ type: "warn", message: `DESIGN.md не сгенерирован: ${reason}`, analysisId: analysis?.id });
       }
 
       // ═══ STEP 6: Save to DB ═══

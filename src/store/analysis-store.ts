@@ -403,6 +403,9 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
                 });
               } else if (event.type === "error") {
                 set({ isAnalyzing: false, error: event.message });
+              } else if (event.type === "warn") {
+                console.warn("[analysis warn]:", event.message);
+                // Store warning — can be shown in UI later
               }
             } catch {
               // Ignore malformed events
