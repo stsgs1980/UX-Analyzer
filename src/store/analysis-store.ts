@@ -15,7 +15,7 @@ export interface AnalysisResult {
     source?: string;
     type?: string;
     visualStyle?: string;
-    techStack?: string;
+    techStack?: string | string[];
     features?: string[];
     interactions?: string[];
     inspiration?: string[];
@@ -270,7 +270,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   },
   clearAllHistory: async () => {
     try {
-      await fetch("/api/analyses", { method: "DELETE" });
+      await fetch("/api/analyses?confirm=true", { method: "DELETE" });
       set({ history: [], result: null, currentAnalysisId: null });
     } catch (err) {
       console.error("Failed to clear history:", err);
@@ -281,6 +281,9 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   startAnalysis: async () => {
     const { urls, imageBase64, imageFileName } = get();
     if (urls.length === 0 && !imageBase64) return;
+
+    // M3: Prevent double-submission race condition
+    if (get().isAnalyzing) return;
 
     set({
       isAnalyzing: true,

@@ -52,8 +52,18 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get("id");
 
     if (id) {
+      // Validate ID format (cuid) to prevent injection
+      if (!/^[a-z0-9]{10,30}$/.test(id)) {
+        return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
+      }
       await db.analysis.delete({ where: { id } });
       return NextResponse.json({ success: true });
+    }
+
+    // H1: deleteMany (clear all) requires explicit confirm=true query param
+    const confirmAll = searchParams.get("confirm");
+    if (confirmAll !== "true") {
+      return NextResponse.json({ error: "Для полной очистки необходим параметр ?confirm=true" }, { status: 400 });
     }
 
     const count = await db.analysis.deleteMany({});

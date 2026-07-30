@@ -143,7 +143,7 @@ function TeardownTab({ data }: { data: AnalysisResult }) {
           <SectionLabel icon={Cpu}>Технологический стек</SectionLabel>
           <div className="border-l-2 border-l-primary/40 pl-4 py-3">
             <p className="text-sm leading-relaxed whitespace-pre-line">
-              {t.techStack}
+              {Array.isArray(t.techStack) ? t.techStack.join(", ") : t.techStack}
             </p>
           </div>
         </div>

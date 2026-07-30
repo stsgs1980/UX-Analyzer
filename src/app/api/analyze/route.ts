@@ -5,6 +5,8 @@ import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from "@/l
 import { VLM_ANALYSIS_PROMPT, type VlmAnalysisResult } from "@/lib/vlm-prompt";
 import { buildDesignMdPrompt } from "@/lib/design-md-prompt";
 import { db } from "@/lib/db";
+import { validateExternalUrl, isImageUrlSafe } from "@/lib/url-safety";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 interface PageContent {
   url: string;
@@ -68,6 +70,19 @@ function extractJson(text: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // C3: Rate limiting
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rateCheck = checkRateLimit(clientIp);
+  if (!rateCheck.allowed) {
+    return Response.json(
+      { error: "Слишком много запросов. Подождите минуту." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil((rateCheck.resetAt - Date.now()) / 1000)), "X-RateLimit-Remaining": "0" },
+      }
+    );
+  }
+
   const body = await request.json();
   const { urls, imageBase64, imageFileName } = body as {
     urls?: string[];
@@ -75,8 +90,14 @@ export async function POST(request: NextRequest) {
     imageFileName?: string;
   };
 
-  // Determine analysis mode
+  // Determine analysis mode first (needed for size check)
   const hasImageUpload = !!imageBase64;
+
+  // H3: Server-side image size validation (base64 ~33% overhead, max 15MB base64 = ~10MB image)
+  if (hasImageUpload && imageBase64!.length > 15 * 1024 * 1024) {
+    return Response.json({ error: "Изображение слишком большое (максимум 10 МБ)" }, { status: 400 });
+  }
+
   const hasUrls = urls && Array.isArray(urls) && urls.length > 0;
 
   if (!hasImageUpload && !hasUrls) {
@@ -87,10 +108,15 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Максимум 10 URL за один запрос" }, { status: 400 });
   }
 
+  // C2: SSRF protection — validate URLs
   if (hasUrls) {
     for (const url of urls!) {
       try { new URL(url); } catch {
-        return Response.json({ error: `Некорректный URL: ${url}` }, { status: 400 });
+        return Response.json({ error: "Некорректный формат URL" }, { status: 400 });
+      }
+      const urlCheck = await validateExternalUrl(url);
+      if (!urlCheck.safe) {
+        return Response.json({ error: "URL недоступен или запрещён" }, { status: 400 });
       }
     }
   }
@@ -118,13 +144,18 @@ export async function POST(request: NextRequest) {
   // Dedup: check if same URLs were already analyzed successfully
   if (db && hasUrls && !hasImageUpload) {
     const sortedUrls = JSON.stringify([...urls!].sort());
-    const existing = await dbSafe(() =>
-      db!.analysis.findFirst({
+    // H4: Fetch recent completed analyses for proper dedup
+    const recentCompleted = await dbSafe(() =>
+      db!.analysis.findMany({
         where: { status: "completed" },
         orderBy: { createdAt: "desc" },
+        take: 50,
       })
     );
-    if (existing && JSON.stringify([...JSON.parse(existing.urls)].sort()) === sortedUrls) {
+    const existing = recentCompleted?.find(
+      (a) => { try { return JSON.stringify([...JSON.parse(a.urls)].sort()) === sortedUrls; } catch { return false; } }
+    );
+    if (existing) {
       return new Response(
         new ReadableStream({
           start(controller) {
@@ -165,7 +196,7 @@ export async function POST(request: NextRequest) {
       zai = await ZAI.create();
     } catch (e) {
       console.error("[analyze] ZAI create failed:", e);
-      send({ type: "error", message: `Ошибка инициализации AI: ${e instanceof Error ? e.message : e}` });
+      send({ type: "error", message: "Ошибка инициализации AI. Попробуйте позже." });
       await writer.close();
       return;
     }
@@ -212,7 +243,7 @@ export async function POST(request: NextRequest) {
       if (!extractedImageBase64 && hasUrls && !pinterestSource) {
         const firstUrl = urls![0];
         const isImageUrl = /\.(png|jpg|jpeg|gif|webp|svg|bmp|ico)(\?.*)?$/i.test(firstUrl);
-        if (isImageUrl) {
+        if (isImageUrl && isImageUrlSafe(firstUrl)) {
           send({ type: "progress", step: "downloading_image", message: "Скачиваю изображение...", progress: 0.08, analysisId: analysis?.id });
           try {
             const imgBase64 = await withTimeout(downloadImageAsBase64(firstUrl), 15000, "Image download");

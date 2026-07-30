@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -26,11 +26,6 @@ export function DesignMdViewer({ content }: DesignMdViewerProps) {
     URL.revokeObjectURL(url);
   };
 
-  // Extract code blocks and apply syntax highlighting
-  const processedContent = useMemo(() => {
-    return content;
-  }, [content]);
-
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -48,7 +43,7 @@ export function DesignMdViewer({ content }: DesignMdViewerProps) {
         </Button>
       </div>
 
-      {/* Markdown content */}
+      {/* Markdown content - sanitized */}
       <div className="prose prose-invert prose-sm max-w-none
         prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight
         prose-p:text-muted-foreground prose-p:leading-relaxed
@@ -63,7 +58,7 @@ export function DesignMdViewer({ content }: DesignMdViewerProps) {
         prose-th:text-foreground prose-th:border-white/10
         prose-td:text-muted-foreground prose-td:border-white/5
       ">
-        <ReactMarkdown>{processedContent}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{content}</ReactMarkdown>
       </div>
     </div>
   );
