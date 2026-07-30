@@ -477,7 +477,7 @@ export async function POST(request: NextRequest) {
 
       send({ type: "error", message: errorMsg, analysisId: analysis?.id });
     } finally {
-      await writer.close();
+      try { await writer.close(); } catch { /* already closed */ }
     }
   })();
 
