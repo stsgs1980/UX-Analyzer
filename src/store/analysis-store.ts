@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 
 const STORAGE_KEY = "ux-analyzer:last-result";
 
@@ -404,8 +405,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
               } else if (event.type === "error") {
                 set({ isAnalyzing: false, error: event.message });
               } else if (event.type === "warn") {
-                console.warn("[analysis warn]:", event.message);
-                // Store warning — can be shown in UI later
+                toast.warning(event.message, { duration: 6000 });
               }
             } catch {
               // Ignore malformed events
