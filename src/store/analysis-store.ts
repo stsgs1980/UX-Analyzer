@@ -1,5 +1,36 @@
 import { create } from "zustand";
 
+const STORAGE_KEY = "ux-analyzer:last-result";
+
+function persistResult(result: AnalysisResult | null, analysisId: string | null, designMd: string | null) {
+  if (typeof window === "undefined" || !result) return;
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ result, analysisId, designMd, ts: Date.now() }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function restoreResult(): { result: AnalysisResult; analysisId: string; designMd: string | null } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // Expire after 30 minutes
+    if (Date.now() - data.ts > 30 * 60 * 1000) {
+      sessionStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return { result: data.result, analysisId: data.analysisId, designMd: data.designMd || null };
+  } catch {
+    return null;
+  }
+}
+
+function clearPersistedResult() {
+  if (typeof window === "undefined") return;
+  try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
 export interface AnalysisProgress {
   step: string;
   message: string;
@@ -216,13 +247,14 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   clearUrls: () => set({ urls: [], inputUrl: "" }),
   setInputUrl: (url: string) => set({ inputUrl: url }),
 
-  // Analysis
+  // Analysis — try to restore from sessionStorage (survives HMR/reload)
   isAnalyzing: false,
   progress: null,
-  result: null,
+  ...((): Pick<AnalysisStore, 'result' | 'currentAnalysisId' | 'designMdContent'> => {
+    const restored = restoreResult();
+    return { result: restored?.result ?? null, currentAnalysisId: restored?.analysisId ?? null, designMdContent: restored?.designMd ?? null };
+  })(),
   error: null,
-  currentAnalysisId: null,
-  designMdContent: null,
 
   // History
   history: [],
@@ -249,6 +281,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
             currentAnalysisId: data.id,
             urls: data.urls,
           });
+          persistResult(data.result, data.id, data.result?.designMd || null);
         }
       }
     } catch (err) {
@@ -292,6 +325,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       error: null,
       currentAnalysisId: null,
     });
+    clearPersistedResult();
 
     try {
       const response = await fetch("/api/analyze", {
@@ -338,12 +372,16 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
                   currentAnalysisId: event.analysisId,
                 });
               } else if (event.type === "result") {
+                const newResult = event.data as AnalysisResult;
+                const newId = event.analysisId as string;
+                const newDesignMd = (event.data?.designMd as string) || null;
                 set({
                   isAnalyzing: false,
-                  result: event.data,
-                  currentAnalysisId: event.analysisId,
-                  designMdContent: event.data?.designMd || null,
+                  result: newResult,
+                  currentAnalysisId: newId,
+                  designMdContent: newDesignMd,
                 });
+                persistResult(newResult, newId, newDesignMd);
               } else if (event.type === "design_md") {
                 set({
                   designMdContent: event.content,
@@ -361,9 +399,21 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         }
       }
 
-      // If still analyzing (stream ended without result), finalize
+      // If still analyzing (stream ended without result), try to recover from DB
       if (get().isAnalyzing) {
+        const pendingId = get().currentAnalysisId;
         set({ isAnalyzing: false });
+        if (pendingId) {
+          // Stream broke — try loading the result from DB (it might have been saved)
+          const res = await fetch(`/api/analyses/${pendingId}`).catch(() => null);
+          if (res?.ok) {
+            const data = await res.json();
+            if (data.result) {
+              set({ result: data.result, currentAnalysisId: data.id });
+              persistResult(data.result, data.id, data.result?.designMd || null);
+            }
+          }
+        }
       }
 
       // Reload history
@@ -374,7 +424,8 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     }
   },
 
-  reset: () =>
+  reset: () => {
+    clearPersistedResult();
     set({
       isAnalyzing: false,
       progress: null,
@@ -384,7 +435,8 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       designMdContent: null,
       imageBase64: null,
       imageFileName: null,
-    }),
+    });
+  },
 
   setUrlsFromHistory: (urls: string[]) => {
     set({ urls, inputUrl: "", result: null, error: null, progress: null, imageBase64: null, imageFileName: null });
