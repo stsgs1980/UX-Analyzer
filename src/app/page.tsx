@@ -10,6 +10,7 @@ import { AnalysisHistory } from "@/components/analysis/analysis-history";
 import { Separator } from "@/components/ui/separator";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { Eye, Leaf, Zap, ScanSearch } from "lucide-react";
+import { HistoryDropdown } from "@/components/analysis/history-dropdown";
 
 const METHODOLOGIES = [
   {
@@ -71,7 +72,7 @@ const METHODOLOGIES = [
 ];
 
 export default function Home() {
-  const { loadHistory, result, isAnalyzing } = useAnalysisStore();
+  const { loadHistory, restoreSession, result, isAnalyzing } = useAnalysisStore();
   const mainRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -79,8 +80,9 @@ export default function Home() {
   useScrollReveal({ rootMargin: "0px 0px -30px 0px" });
 
   useEffect(() => {
+    restoreSession();
     loadHistory();
-  }, [loadHistory]);
+  }, [restoreSession, loadHistory]);
 
   // Auto-scroll to progress when analysis starts
   useEffect(() => {
@@ -105,13 +107,14 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col organic-bg">
       {/* Header — minimal, line bottom */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-md relative">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Eye className="h-4 w-4 text-emerald-400" />
             <span className="text-sm font-semibold tracking-tight">UX Analyzer</span>
           </div>
           <div className="flex items-center gap-4">
+            <HistoryDropdown />
             <span className="hidden sm:inline text-[10px] text-emerald-400/50 font-medium uppercase tracking-widest flex items-center gap-1.5">
               <Leaf className="h-3 w-3" />
               Sustainable

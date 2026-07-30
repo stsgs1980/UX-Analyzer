@@ -208,6 +208,7 @@ interface AnalysisStore {
 
   // Actions
   startAnalysis: () => Promise<void>;
+  restoreSession: () => void;
   reset: () => void;
   setUrlsFromHistory: (urls: string[]) => void;
   setDesignMd: (md: string) => void;
@@ -247,13 +248,12 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   clearUrls: () => set({ urls: [], inputUrl: "" }),
   setInputUrl: (url: string) => set({ inputUrl: url }),
 
-  // Analysis — try to restore from sessionStorage (survives HMR/reload)
+  // Analysis — restored from sessionStorage after hydration via restoreSession()
   isAnalyzing: false,
   progress: null,
-  ...((): Pick<AnalysisStore, 'result' | 'currentAnalysisId' | 'designMdContent'> => {
-    const restored = restoreResult();
-    return { result: restored?.result ?? null, currentAnalysisId: restored?.analysisId ?? null, designMdContent: restored?.designMd ?? null };
-  })(),
+  result: null,
+  currentAnalysisId: null,
+  designMdContent: null,
   error: null,
 
   // History
@@ -307,6 +307,18 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       set({ history: [], result: null, currentAnalysisId: null });
     } catch (err) {
       console.error("Failed to clear history:", err);
+    }
+  },
+
+  // Restore result from sessionStorage (call from useEffect after hydration)
+  restoreSession: () => {
+    const restored = restoreResult();
+    if (restored) {
+      set({
+        result: restored.result,
+        currentAnalysisId: restored.analysisId,
+        designMdContent: restored.designMd,
+      });
     }
   },
 

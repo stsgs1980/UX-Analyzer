@@ -440,9 +440,9 @@ export async function POST(request: NextRequest) {
 
         try {
           const sourceDescription = pinterestData
-            ? `Pinterest: ${pinterestData.title} by ${pinterestData.authorName}`
+            ? "Pinterest: " + pinterestData.title + " by " + pinterestData.authorName
             : hasImageUpload
-            ? `Uploaded: ${imageFileName || "image"}`
+            ? "Uploaded: " + (imageFileName || "image")
             : urls?.[0] || "unknown";
 
           const designMdPrompt = buildDesignMdPrompt(vlmResult, sourceDescription);
@@ -454,7 +454,7 @@ export async function POST(request: NextRequest) {
               ],
               thinking: { type: "disabled" },
             }),
-            30000,
+            90000,
             "DESIGN.md generation"
           );
 
@@ -463,7 +463,9 @@ export async function POST(request: NextRequest) {
 
           send({ type: "design_md", content: designMdContent, analysisId: analysis?.id });
         } catch (e) {
-          console.warn("[design-md] Failed:", e instanceof Error ? e.message : e);
+          const errMsg = e instanceof Error ? e.message : String(e);
+          console.warn("[design-md] Failed:", errMsg);
+          // Non-fatal: analysis result is still valid without DESIGN.md
         }
       }
 
