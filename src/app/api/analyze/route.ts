@@ -3,6 +3,7 @@ import ZAI from "z-ai-web-dev-sdk";
 import { buildAnalysisPrompt } from "@/lib/analysis-prompt";
 import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from "@/lib/pinterest";
 import { captureScreenshot } from "@/lib/screenshot";
+import { extractTechFingerprints, formatFingerprintsForPrompt } from "@/lib/tech-fingerprints";
 import { VLM_ANALYSIS_PROMPT, type VlmAnalysisResult } from "@/lib/vlm-prompt";
 import { buildDesignMdPrompt } from "@/lib/design-md-prompt";
 import { db } from "@/lib/db";
@@ -208,6 +209,7 @@ export async function POST(request: NextRequest) {
     let extractedImageUrl: string | null = null;
     let vlmResult: VlmAnalysisResult | null = null;
     let designMdContent: string | null = null;
+    let techFingerprintsText: string | null = null;
     const dataSources: string[] = [];
 
     let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -272,42 +274,40 @@ export async function POST(request: NextRequest) {
         const [fetchOutcome, searchOutcome] = await Promise.allSettled([
           // --- page_reader for all URLs ---
           (async () => {
+            // We need raw HTML for tech fingerprinting, but also stripped content for LLM
             const results = await Promise.allSettled(
-              urls!.map(url =>
-                withTimeout(
-                  zai.functions.invoke("page_reader", { url }).then(r => {
-                    const rawHtml = r.data?.html || "";
-                    return {
-                      url,
-                      title: r.data?.title || "Без заголовка",
-                      content: rawHtml
-                        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-                        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-                        .replace(/<[^>]*>/g, " ")
-                        .replace(/\s+/g, " ")
-                        .trim(),
-                    };
-                  }),
-                  15000,
-                  `page_reader(${url})`
-                ).catch(err => ({ url, title: "Недоступно", content: "", error: err instanceof Error ? err.message : "timeout" }))
-              )
+              urls!.map(async url => {
+                try {
+                  const r = await withTimeout(
+                    zai.functions.invoke("page_reader", { url }),
+                    15000,
+                    `page_reader(${url})`
+                  );
+                  const rawHtml = (r as any).data?.html || "";
+                  
+                  // Extract tech fingerprints from first successful page
+                  if (!techFingerprintsText && rawHtml) {
+                    const fp = extractTechFingerprints(rawHtml);
+                    techFingerprintsText = formatFingerprintsForPrompt(fp);
+                    console.log("[tech-fp] Extracted from", url);
+                  }
+                  
+                  return {
+                    url,
+                    title: (r as any).data?.title || "Без заголовка",
+                    content: rawHtml
+                      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+                      .replace(/<[^>]*>/g, " ")
+                      .replace(/\s+/g, " ")
+                      .trim(),
+                  };
+                } catch (err) {
+                  return { url, title: "Недоступно", content: "", error: err instanceof Error ? err.message : "timeout" };
+                }
+              })
             );
-            const pages = results.filter((r): r is PromiseFulfilledResult<PageContent> => r.status === "fulfilled").map(r => r.value);
-
-            // Take screenshot of first URL (if no image yet)
-            if (!extractedImageBase64 && urls![0]) {
-              const firstUrl = urls![0];
-              console.log("[screenshot] Trying to capture:", firstUrl);
-              const ss = await captureScreenshot(firstUrl);
-              if (ss) {
-                extractedImageBase64 = ss.base64;
-                extractedImageUrl = firstUrl;
-                console.log("[screenshot] Captured via", ss.source);
-              }
-            }
-
-            return pages;
+            return results.filter((r): r is PromiseFulfilledResult<PageContent> => r.status === "fulfilled").map(r => r.value);
           })(),
           // --- web_search for first 2 URLs ---
           (async () => {
@@ -333,7 +333,6 @@ export async function POST(request: NextRequest) {
 
         if (fetchOutcome.status === "fulfilled") pageContents.push(...fetchOutcome.value);
         if (pageContents.some(p => !p.error)) dataSources.push("page_reader");
-        if (extractedImageBase64 && !pinterestSource && !hasImageUpload) dataSources.push("screenshot");
         if (searchOutcome.status === "fulfilled" && searchOutcome.value.length > 0) {
           searchResults.push(...searchOutcome.value);
           dataSources.push("web_search");
@@ -343,6 +342,19 @@ export async function POST(request: NextRequest) {
         send({ type: "progress", step: "fetching", message: `Получено ${okPages} ${okPages === 1 ? 'страница' : 'страниц'}, ${searchResults.length} результатов поиска`, progress: 0.32, analysisId: analysis?.id });
       } else if (hasImageUpload) {
         send({ type: "progress", step: "fetching", message: "Изображение готово к анализу", progress: 0.20, analysisId: analysis?.id });
+      }
+
+      // ═══ STEP 2a: Screenshot (if no image yet) ═══
+      if (!extractedImageBase64 && hasUrls && !pinterestSource && urls![0]) {
+        const firstUrl = urls![0];
+        console.log("[screenshot] Trying to capture:", firstUrl);
+        const ss = await withTimeout(captureScreenshot(firstUrl), 30000, "screenshot");
+        if (ss) {
+          extractedImageBase64 = ss.base64;
+          extractedImageUrl = firstUrl;
+          dataSources.push("screenshot");
+          console.log("[screenshot] Captured via", ss.source);
+        }
       }
 
       // ═══ STEP 2b: VLM visual analysis ═══
@@ -398,7 +410,8 @@ export async function POST(request: NextRequest) {
         searchResults,
         vlmResult,
         hasImageUpload ? "upload" : pinterestSource ? "pinterest" : "url",
-        imageFileName || undefined
+        imageFileName || undefined,
+        techFingerprintsText
       );
 
       // Heartbeat: send progress updates while LLM is thinking (0.52 → 0.80)

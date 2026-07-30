@@ -18,7 +18,8 @@ export function buildAnalysisPrompt(
   searchResults: Array<{ url: string; title: string; snippet: string }>,
   vlmResult?: VlmAnalysisResult | null,
   sourceType?: string,
-  imageFileName?: string
+  imageFileName?: string,
+  techFingerprints?: string | null
 ): string {
   const isBatch = urls.length >= 2;
 
@@ -55,6 +56,10 @@ export function buildAnalysisPrompt(
       dataSection += `- ${r.title}: ${r.snippet}\n`;
     }
     dataSection += "\n";
+  }
+
+  if (techFingerprints) {
+    dataSection += techFingerprints;
   }
 
   if (pageContents.length === 0 && searchResults.length === 0 && !vlmResult) {
