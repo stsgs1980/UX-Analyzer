@@ -382,7 +382,7 @@ export async function POST(request: NextRequest) {
           send({ type: "progress", step: "analyzing", message: `AI обрабатывает: ${methods[heartbeatIdx]}...`, progress: Math.round(p * 100) / 100, analysisId: analysis?.id });
           heartbeatIdx++;
         } else {
-          clearInterval(heartbeatInterval);
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
         }
       }, 5000);
 

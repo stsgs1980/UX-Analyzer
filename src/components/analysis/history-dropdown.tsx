@@ -50,7 +50,7 @@ export function HistoryDropdown() {
   );
 
   const handleDelete = useCallback(
-    (e: React.MouseEvent, id: string) => {
+    (e: React.SyntheticEvent, id: string) => {
       e.stopPropagation();
       deleteHistoryItem(id);
       toast.success("Анализ удалён");
