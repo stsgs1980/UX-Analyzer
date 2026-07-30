@@ -215,7 +215,7 @@ export function DesignSystemTab({ data }: { data: AnalysisResult }) {
       <div className="py-12 text-center">
         <ImageIcon className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
         <p className="text-muted-foreground text-sm">
-          Визуальный анализ доступен при анализе Pinterest, прямых ссылок на изображения или загруженных файлах.
+          Визуальный анализ доступен, когда удалось извлечь изображение (og:image, Pinterest, прямая ссылка или загрузка).
         </p>
       </div>
     );

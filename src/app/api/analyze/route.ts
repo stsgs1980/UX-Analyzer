@@ -69,6 +69,17 @@ function extractJson(text: string): string {
   return jsonStr;
 }
 
+/** Extract og:image URL from raw HTML. */
+function extractOgImage(html: string): string | null {
+  const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i)
+    || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i);
+  if (ogMatch?.[1]) return ogMatch[1];
+  // Fallback: twitter:image
+  const twMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["'][^>]*>/i)
+    || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["'][^>]*>/i);
+  return twMatch?.[1] || null;
+}
+
 export async function POST(request: NextRequest) {
   // C3: Rate limiting
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -271,25 +282,56 @@ export async function POST(request: NextRequest) {
         const [fetchOutcome, searchOutcome] = await Promise.allSettled([
           // --- page_reader for all URLs ---
           (async () => {
+            interface PageResult extends PageContent { rawHtml?: string }
             const results = await Promise.allSettled(
               urls!.map(url =>
                 withTimeout(
-                  zai.functions.invoke("page_reader", { url }).then(r => ({
-                    url,
-                    title: r.data?.title || "Без заголовка",
-                    content: (r.data?.html || "")
-                      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-                      .replace(/<[^>]*>/g, " ")
-                      .replace(/\s+/g, " ")
-                      .trim(),
-                  })),
+                  zai.functions.invoke("page_reader", { url }).then(r => {
+                    const rawHtml = r.data?.html || "";
+                    return {
+                      url,
+                      title: r.data?.title || "Без заголовка",
+                      rawHtml,
+                      content: rawHtml
+                        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+                        .replace(/<[^>]*>/g, " ")
+                        .replace(/\s+/g, " ")
+                        .trim(),
+                    };
+                  }),
                   15000,
                   `page_reader(${url})`
                 ).catch(err => ({ url, title: "Недоступно", content: "", error: err instanceof Error ? err.message : "timeout" }))
               )
             );
-            return results.filter((r): r is PromiseFulfilledResult<PageContent> => r.status === "fulfilled").map(r => r.value);
+            const pages = results.filter((r): r is PromiseFulfilledResult<PageResult> => r.status === "fulfilled").map(r => r.value);
+
+            // Extract og:image from first successful page (if no image yet)
+            if (!extractedImageBase64) {
+              for (const page of pages) {
+                if (page.rawHtml && !page.error) {
+                  const ogImg = extractOgImage(page.rawHtml);
+                  if (ogImg) {
+                    console.log("[og-image] Found for", page.url, ":", ogImg.substring(0, 100));
+                    try {
+                      const imgBase64 = await withTimeout(downloadImageAsBase64(ogImg), 15000, "og:image download");
+                      if (imgBase64) {
+                        console.log("[og-image] Downloaded OK, size:", Math.round(imgBase64.length / 1024), "KB");
+                        extractedImageBase64 = imgBase64;
+                        extractedImageUrl = ogImg;
+                      }
+                    } catch (e) {
+                      console.warn("[og-image] Download failed:", e);
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+
+            // Return only PageContent (strip rawHtml)
+            return pages.map(({ rawHtml: _, ...rest }) => rest);
           })(),
           // --- web_search for first 2 URLs ---
           (async () => {
@@ -315,6 +357,7 @@ export async function POST(request: NextRequest) {
 
         if (fetchOutcome.status === "fulfilled") pageContents.push(...fetchOutcome.value);
         if (pageContents.some(p => !p.error)) dataSources.push("page_reader");
+        if (extractedImageBase64 && !pinterestSource && !hasImageUpload) dataSources.push("og_image");
         if (searchOutcome.status === "fulfilled" && searchOutcome.value.length > 0) {
           searchResults.push(...searchOutcome.value);
           dataSources.push("web_search");
