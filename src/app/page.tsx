@@ -7,7 +7,6 @@ import { UrlInput } from "@/components/analysis/url-input";
 import { AnalysisProgress } from "@/components/analysis/analysis-progress";
 import { AnalysisResults } from "@/components/analysis/analysis-results";
 import { AnalysisHistory } from "@/components/analysis/analysis-history";
-import { Separator } from "@/components/ui/separator";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { Eye, Leaf, ScanSearch } from "lucide-react";
 import Link from "next/link";
@@ -170,12 +169,55 @@ export default function Home() {
             Вставьте ссылку или загрузите изображение — получите полный AI-анализ
             <br className="hidden sm:block" /> по 8 профессиональным методологиям + VLM.
           </p>
+        </section>
 
-          {/* URL Input */}
-          <div className="mt-8 sm:mt-10 border-t border-b border-emerald-500/8 py-8 sm:py-10">
+        {/* ═══════════════════════════════════════════
+            BENTO GRID — Analysis Area
+        ═══════════════════════════════════════════ */}
+        <div className="bento-grid mb-16 sm:mb-24">
+          {/* URL Input — full width */}
+          <div className="bento-card p-6 bento-card-expanded" style={{ gridColumn: "span 8" }}>
             <UrlInput />
           </div>
-        </section>
+
+          {/* Progress — visible only when analyzing */}
+          <AnimatePresence>
+            {(isAnalyzing || error) && (
+              <motion.div
+                key="progress"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.3 }}
+                className="bento-card p-6 bento-card-expanded"
+                style={{ gridColumn: "span 8" }}
+              >
+                <div ref={progressRef}>
+                  <AnalysisProgress />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Results — visible when analysis complete */}
+          <AnimatePresence>
+            {!!result && (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.4 }}
+                className="bento-card p-0 bento-card-expanded"
+                style={{ gridColumn: "span 8" }}
+              >
+                <div ref={resultsRef}>
+                  <AnalysisResults />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* ═══════════════════════════════════════════
             METHODOLOGY INDEX — typographic grid
@@ -239,53 +281,11 @@ export default function Home() {
         </AnimatePresence>
 
         {/* ═══════════════════════════════════════════
-            PROGRESS — reveals DOWN
-        ═══════════════════════════════════════════ */}
-        <AnimatePresence>
-          {(isAnalyzing || error) && (
-            <motion.section
-              key="progress"
-              initial={{ opacity: 0, height: 0, overflow: "hidden" }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-              className="overflow-hidden"
-            >
-              <div ref={progressRef} className="pt-10 space-y-6 max-w-2xl mx-auto">
-                <AnalysisProgress />
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
-
-        <Separator className="bg-white/5 mt-10" />
-
-        {/* ═══════════════════════════════════════════
             HISTORY
         ═══════════════════════════════════════════ */}
         <section className="pt-10">
           <AnalysisHistory />
         </section>
-
-        {/* ═══════════════════════════════════════════
-            RESULTS — BELOW history, full 1280px
-        ═══════════════════════════════════════════ */}
-        <AnimatePresence>
-          {!!result && (
-            <motion.section
-              key="results"
-              initial={{ opacity: 0, height: 0, overflow: "hidden" }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-              className="overflow-hidden"
-            >
-              <div ref={resultsRef} className="pt-10">
-                <AnalysisResults />
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
       </main>
 
       {/* Footer — minimal typographic */}
