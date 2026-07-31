@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
 import { buildAnalysisPrompt } from "@/lib/analysis-prompt";
+import { localProvider } from "@/lib/gemini-provider";
 import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from "@/lib/pinterest";
 import { captureScreenshot } from "@/lib/screenshot";
 import { extractTechFingerprints, formatFingerprintsForPrompt } from "@/lib/tech-fingerprints";
@@ -9,6 +9,7 @@ import { buildDesignMdPrompt } from "@/lib/design-md-prompt";
 import { db } from "@/lib/db";
 import { validateExternalUrl, isImageUrlSafe } from "@/lib/url-safety";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { extractJson } from "@/lib/extract-json";
 
 interface PageContent {
   url: string;
@@ -56,19 +57,6 @@ async function dbSafe<T>(fn: () => Promise<T>): Promise<T | null> {
     console.warn("[db] Operation skipped:", e);
     return null;
   }
-}
-
-/** Extract JSON from potentially markdown-wrapped LLM response. */
-function extractJson(text: string): string {
-  let jsonStr = text.trim();
-  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) jsonStr = jsonMatch[1].trim();
-  const firstBrace = jsonStr.indexOf("{");
-  const lastBrace = jsonStr.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
-  }
-  return jsonStr;
 }
 
 export async function POST(request: NextRequest) {
@@ -196,7 +184,28 @@ export async function POST(request: NextRequest) {
     let zai;
     try {
       send({ type: "progress", step: "init", message: "Инициализирую AI-движок...", progress: 0.02, analysisId: analysis?.id });
-      zai = await ZAI.create();
+      // Use Gemini if API key is set, otherwise try ZAI SDK
+      // Check if Groq API key is available, then try Ollama, then ZAI
+      if (process.env.GROQ_API_KEY) {
+        zai = localProvider;
+        console.log("[analyze] Using Groq provider (llama-3.3-70b)");
+      } else {
+        // Check if Ollama is available locally
+        let ollamaAvailable = false;
+        try {
+          const ollamaCheck = await fetch("http://localhost:11434/api/tags", { signal: AbortSignal.timeout(2000) });
+          ollamaAvailable = ollamaCheck.ok;
+        } catch {}
+
+        if (ollamaAvailable) {
+          zai = localProvider;
+          console.log("[analyze] Using local Ollama provider");
+        } else {
+          const ZAI = (await import("z-ai-web-dev-sdk")).default;
+          zai = await ZAI.create();
+          console.log("[analyze] Using ZAI SDK provider");
+        }
+      }
     } catch (e) {
       console.error("[analyze] ZAI create failed:", e);
       send({ type: "error", message: "Ошибка инициализации AI. Попробуйте позже." });
@@ -434,7 +443,7 @@ export async function POST(request: NextRequest) {
           ],
           thinking: { type: "disabled" },
         }),
-        120000,
+        300000,
         "LLM analysis"
       );
 
