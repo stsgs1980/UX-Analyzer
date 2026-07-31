@@ -72,7 +72,7 @@ const METHODOLOGIES = [
 ];
 
 export default function Home() {
-  const { loadHistory, restoreSession, result, isAnalyzing } = useAnalysisStore();
+  const { loadHistory, restoreSession, result, isAnalyzing, error } = useAnalysisStore();
   const mainRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -233,7 +233,7 @@ export default function Home() {
             PROGRESS — reveals DOWN
         ═══════════════════════════════════════════ */}
         <AnimatePresence>
-          {isAnalyzing && (
+          {(isAnalyzing || error) && (
             <motion.section
               key="progress"
               initial={{ opacity: 0, height: 0, overflow: "hidden" }}
