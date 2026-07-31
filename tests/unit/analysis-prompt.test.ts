@@ -13,7 +13,8 @@ describe("buildAnalysisPrompt", () => {
   it("uses single format for 1 URL", () => {
     const result = buildAnalysisPrompt(["https://example.com"], basePages, baseSearch);
     expect(result).toContain('type:"single"');
-    expect(result).toContain("patternMining:null");
+    expect(result).not.toContain("patternMining");
+    expect(result).not.toContain("vlmAnalysis");
   });
 
   it("uses batch format for 2+ URLs", () => {
@@ -59,11 +60,12 @@ describe("buildAnalysisPrompt", () => {
     expect(result).toContain("design.png");
   });
 
-  it("truncates long page content to 2000 chars", () => {
-    const longContent = "x".repeat(3000);
-    const pages = [{ url: "https://example.com", title: "Long", content: longContent }];
+  it("extracts structured content instead of raw HTML", () => {
+    const htmlContent = "<html><head><title>My Page</title><meta name='description' content='A great product'></head><body><h1>Welcome</h1><p>Hello world</p></body></html>";
+    const pages = [{ url: "https://example.com", title: "My Page", content: htmlContent }];
     const result = buildAnalysisPrompt(["https://example.com"], pages, []);
-    expect(result).toContain("...[обрезано]");
-    expect(result).not.toContain(longContent);
+    expect(result).toContain("My Page");
+    expect(result).toContain("A great product");
+    expect(result).toContain("Welcome");
   });
 });
