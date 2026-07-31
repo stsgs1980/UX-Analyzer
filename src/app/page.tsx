@@ -146,7 +146,7 @@ export default function Home() {
           <div>
             {/* Line 1 — foundation, fills ~90% at W1280 */}
             <p
-              className="font-bold leading-[0.88] tracking-[-0.03em] text-foreground/[0.18] text-[clamp(2.6rem,12vw,9.6rem)]"
+              className="font-bold leading-[0.88] tracking-[-0.03em] text-foreground/[0.18] text-[clamp(2.6rem,12vw,9.6rem)] [contain:paint]"
               aria-hidden="true"
             >
               Инженерно-
@@ -154,7 +154,7 @@ export default function Home() {
 
             {/* Line 2 — builds weight, fills ~93% at W1280 */}
             <p
-              className="font-bold leading-[0.88] tracking-[-0.03em] text-foreground/[0.35] text-[clamp(2.4rem,11.5vw,9.2rem)]"
+              className="font-bold leading-[0.88] tracking-[-0.03em] text-foreground/[0.35] text-[clamp(2.4rem,11.5vw,9.2rem)] [contain:paint]"
               aria-hidden="true"
             >
               дизайнерский
@@ -162,10 +162,10 @@ export default function Home() {
 
             {/* Line 3 — MONUMENTAL, fills ~97% at W1280, 2.5× the size */}
             <h1
-              className="font-black leading-[0.82] tracking-[-0.04em] text-[clamp(5rem,24vw,19.2rem)]"
+              className="font-black leading-[0.82] tracking-[-0.04em] text-[clamp(5rem,24vw,19.2rem)] text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-emerald-300/80 [contain:paint]"
               aria-label="Инженерно-дизайнерский разбор"
             >
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-emerald-300/80">разбор</span>
+              разбор
             </h1>
           </div>
 
