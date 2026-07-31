@@ -348,8 +348,14 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        set({ isAnalyzing: false, error: errData.error || "Ошибка запроса" });
+        let errMsg = "Ошибка запроса";
+        try {
+          const errData = await response.json();
+          errMsg = errData.error || errMsg;
+        } catch {
+          errMsg = `HTTP ${response.status} — сервер вернул некорректный ответ`;
+        }
+        set({ isAnalyzing: false, error: errMsg });
         return;
       }
 

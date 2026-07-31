@@ -60,6 +60,7 @@ async function dbSafe<T>(fn: () => Promise<T>): Promise<T | null> {
 }
 
 export async function POST(request: NextRequest) {
+  try {
   // C3: Rate limiting
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const rateCheck = checkRateLimit(clientIp);
@@ -549,4 +550,9 @@ export async function POST(request: NextRequest) {
       Connection: "keep-alive",
     },
   });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Внутренняя ошибка сервера";
+    console.error("[analyze] Unhandled error:", error);
+    return Response.json({ error: msg }, { status: 500 });
+  }
 }
