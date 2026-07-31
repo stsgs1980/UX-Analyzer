@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
+import ZAI from "z-ai-web-dev-sdk";
 import { buildAnalysisPrompt } from "@/lib/analysis-prompt";
-import { localProvider } from "@/lib/gemini-provider";
 import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from "@/lib/pinterest";
 import { captureScreenshot } from "@/lib/screenshot";
 import { extractTechFingerprints, formatFingerprintsForPrompt } from "@/lib/tech-fingerprints";
@@ -184,28 +184,7 @@ export async function POST(request: NextRequest) {
     let zai;
     try {
       send({ type: "progress", step: "init", message: "Инициализирую AI-движок...", progress: 0.02, analysisId: analysis?.id });
-      // Use Gemini if API key is set, otherwise try ZAI SDK
-      // Check if Groq API key is available, then try Ollama, then ZAI
-      if (process.env.GROQ_API_KEY) {
-        zai = localProvider;
-        console.log("[analyze] Using Groq provider (llama-3.3-70b)");
-      } else {
-        // Check if Ollama is available locally
-        let ollamaAvailable = false;
-        try {
-          const ollamaCheck = await fetch("http://localhost:11434/api/tags", { signal: AbortSignal.timeout(2000) });
-          ollamaAvailable = ollamaCheck.ok;
-        } catch {}
-
-        if (ollamaAvailable) {
-          zai = localProvider;
-          console.log("[analyze] Using local Ollama provider");
-        } else {
-          const ZAI = (await import("z-ai-web-dev-sdk")).default;
-          zai = await ZAI.create();
-          console.log("[analyze] Using ZAI SDK provider");
-        }
-      }
+      zai = await ZAI.create();
     } catch (e) {
       console.error("[analyze] ZAI create failed:", e);
       send({ type: "error", message: "Ошибка инициализации AI. Попробуйте позже." });
@@ -443,7 +422,7 @@ export async function POST(request: NextRequest) {
           ],
           thinking: { type: "disabled" },
         }),
-        300000,
+        120000,
         "LLM analysis"
       );
 
