@@ -132,7 +132,7 @@ export function HistoryDropdown() {
               {count > 0 && (
                 <button
                   onClick={handleClearAll}
-                  className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/30 hover:text-red-400/80 transition-colors duration-200"
+                  className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/30 hover:text-red-400/70 transition-colors duration-300"
                   aria-label="Очистить всю историю"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -188,11 +188,11 @@ export function HistoryDropdown() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <Globe className="h-3 w-3 text-muted-foreground/30 shrink-0" />
-                            <span className="text-sm font-medium truncate text-foreground/70 group-hover:text-foreground transition-colors">
+                            <span className="text-sm font-medium truncate text-foreground/70 group-hover:text-foreground transition-colors duration-300">
                               {domain || "—"}
                             </span>
                             {item.urls.length > 1 && (
-                              <span className="text-[10px] text-emerald-400/50 font-medium shrink-0">
+                              <span className="text-[11px] text-emerald-400/50 font-medium shrink-0 group-hover:text-emerald-400/80 transition-colors">
                                 +{item.urls.length - 1}
                               </span>
                             )}

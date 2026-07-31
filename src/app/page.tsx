@@ -170,7 +170,7 @@ export default function Home() {
           </div>
 
           {/* Descriptor — typographic continuation */}
-          <p className="mt-6 sm:mt-10 text-sm sm:text-[15px] text-muted-foreground/40 leading-relaxed font-light max-w-lg">
+          <p className="mt-6 sm:mt-10 text-sm text-muted-foreground/40 leading-relaxed font-light max-w-lg">
             Вставьте ссылку или загрузите изображение — получите полный AI-анализ
             <br className="hidden sm:block" /> по 8 профессиональным методологиям + VLM.
           </p>

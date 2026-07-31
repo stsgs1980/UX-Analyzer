@@ -69,3 +69,25 @@ Stage Summary:
 - Each line fills ~90-96% of container width, 2.5× size cascade creates monumental feel
 - Monochromatic emerald gradient ensures full word readability
 - Responsive via clamp(), works on both desktop and mobile
+---
+Task ID: 4
+Agent: Main
+Task: Full typography audit and consistency fixes across the project
+
+Work Log:
+- Ran comprehensive typography audit via Explore agent across all .tsx files
+- Identified 14 unique font-size values, 6 weights, 5 line-heights, 9 tracking values
+- Found 6 inconsistencies and fixed all:
+  1. `text-[15px]` orphan in page.tsx hero descriptor → `text-sm` (14px)
+  2. Results header `<h2>` was `text-lg` while teardown `<h2>` was `text-xl` → unified to `text-xl font-bold`
+  3. history-dropdown.tsx "Очистить" hover opacity was `/80` vs analysis-history `/70` → unified to `/70`
+  4. history-dropdown.tsx "Очистить" transition was `duration-200` vs `duration-300` → unified to `duration-300`
+  5. history-dropdown.tsx domain name missing `duration-300` → added
+  6. history-dropdown.tsx batch count `+N` was `text-[10px]` without hover vs `text-[11px]` with hover → unified to `text-[11px]` + `group-hover:text-emerald-400/80 transition-colors`
+- Fixed parsing error (missing `>` on span tag) after batch count fix
+- Lint clean, VLM browser verification confirms typographic consistency
+
+Stage Summary:
+- 6 typography inconsistencies fixed across 3 files
+- Typographic scale now consistent: Display (clamp hero) → H2 (text-xl bold) → H4 (text-base semibold) → SectionLabel (text-sm semibold) → Body (text-sm) → Caption (text-xs) → Micro (text-[10px]/[11px])
+- history-dropdown.tsx and analysis-history.tsx are now fully aligned
