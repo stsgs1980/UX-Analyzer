@@ -1,6 +1,6 @@
 /**
  * Simple in-memory rate limiter for POST /api/analyze.
- * 5 requests per minute per IP.
+ * 10 requests per minute per IP.
  */
 
 interface RateEntry {
@@ -10,7 +10,7 @@ interface RateEntry {
 
 const store = new Map<string, RateEntry>();
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = 5;
+const MAX_REQUESTS = 10;
 
 // Cleanup stale entries every 5 minutes
 setInterval(() => {

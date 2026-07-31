@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
+import { localProvider } from "@/lib/gemini-provider";
 import { buildAnalysisPrompt } from "@/lib/analysis-prompt";
 import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from "@/lib/pinterest";
 import { captureScreenshot } from "@/lib/screenshot";
@@ -47,6 +48,37 @@ function friendlyZaiError(err: unknown): string {
     } catch {}
   }
   return msg;
+}
+
+/**
+ * Try LLM call with primary provider, fallback to localProvider on ZAI errors.
+ * Handles: insufficient_balance, API errors, timeouts.
+ */
+async function llmWithFallback(
+  zai: any,
+  primaryZai: any,
+  params: { messages: Array<{ role: string; content: string }>; thinking?: { type: string } },
+  timeoutMs: number,
+  label: string,
+  aiProviderRef: { current: string },
+): Promise<{ choices: Array<{ message: { content: string } }> }> {
+  // Try primary (ZAI) first
+  if (primaryZai) {
+    try {
+      const result = await withTimeout(primaryZai.chat.completions.create(params), timeoutMs, label);
+      return result as { choices: Array<{ message: { content: string } }> };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("insufficient_balance") || msg.includes("API request failed")) {
+        console.warn(`[llm] ${label}: ZAI failed (${msg.substring(0, 100)}), falling back to Groq...`);
+        aiProviderRef.current = "groq";
+      } else {
+        throw e; // Non-ZAI error, propagate
+      }
+    }
+  }
+  // Fallback to localProvider (Groq)
+  return withTimeout(zai.chat.completions.create(params), timeoutMs, `${label} (Groq)`);
 }
 
 /** Safely run a DB operation, returning null on failure. */
@@ -182,15 +214,19 @@ export async function POST(request: NextRequest) {
   //  MAIN PIPELINE — runs async, streams progress via SSE
   // ════════════════════════════════════════════════════════════════
   (async () => {
-    let zai;
+    let zai: any;
+    let primaryZai: any = null;
+    let aiProvider = "zai";
+    const aiProviderRef = { current: "zai" };
     try {
       send({ type: "progress", step: "init", message: "Инициализирую AI-движок...", progress: 0.02, analysisId: analysis?.id });
-      zai = await ZAI.create();
+      primaryZai = await ZAI.create();
+      zai = primaryZai;
     } catch (e) {
-      console.error("[analyze] ZAI create failed:", e);
-      send({ type: "error", message: "Ошибка инициализации AI. Попробуйте позже." });
-      try { await writer.close(); } catch { /* already closed */ }
-      return;
+      console.warn("[analyze] ZAI create failed, using Groq fallback:", e instanceof Error ? e.message : e);
+      zai = localProvider;
+      aiProviderRef.current = "groq";
+      send({ type: "warn", message: "ZAI недоступен, использую Groq (без vision).", analysisId: analysis?.id });
     }
     const pageContents: PageContent[] = [];
     const searchResults: SearchResult[] = [];
@@ -347,13 +383,13 @@ export async function POST(request: NextRequest) {
       }
 
       // ═══ STEP 2b: VLM visual analysis ═══
-      if (extractedImageBase64) {
+      if (extractedImageBase64 && primaryZai) {
         send({ type: "progress", step: "vlm", message: "Распознаю визуальный дизайн: цвета, типографику, компоновку...", progress: 0.38, analysisId: analysis?.id });
 
         try {
           console.log("[vlm] Starting VLM analysis, image size:", Math.round((extractedImageBase64!.length * 3) / 4 / 1024), "KB");
           const vlmResponse = await withTimeout(
-            zai.chat.completions.createVision({
+            primaryZai.chat.completions.createVision({
               model: "default",
               messages: [{
                 role: "user",
@@ -416,15 +452,18 @@ export async function POST(request: NextRequest) {
         }
       }, 5000);
 
-      const completion = await withTimeout(
-        zai.chat.completions.create({
+      const completion = await llmWithFallback(
+        localProvider,
+        primaryZai,
+        {
           messages: [
             { role: "user", content: prompt },
           ],
           thinking: { type: "disabled" },
-        }),
+        },
         120000,
-        "LLM analysis"
+        "LLM analysis",
+        aiProviderRef,
       );
 
       if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
@@ -457,6 +496,7 @@ export async function POST(request: NextRequest) {
       analysisResult.sourceType = sourceType;
       analysisResult.meta = {
         dataSources,
+        aiProvider: aiProviderRef.current,
         confidence: pageContents.length > 0 || vlmResult ? "medium" : "low",
       };
       if (extractedImageUrl) analysisResult.extractedImageUrl = extractedImageUrl;
@@ -478,15 +518,18 @@ export async function POST(request: NextRequest) {
 
           const designMdPrompt = buildDesignMdPrompt(vlmResult, sourceDescription);
 
-          const designMdCompletion = await withTimeout(
-            zai.chat.completions.create({
+          const designMdCompletion = await llmWithFallback(
+            localProvider,
+            primaryZai,
+            {
               messages: [
                 { role: "user", content: designMdPrompt },
               ],
               thinking: { type: "disabled" },
-            }),
+            },
             90000,
-            "DESIGN.md generation"
+            "DESIGN.md generation",
+            aiProviderRef,
           );
 
           designMdContent = (designMdCompletion as any)?.choices?.[0]?.message?.content || "";
