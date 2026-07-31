@@ -15,6 +15,12 @@ test.describe("UX Analyzer E2E", () => {
     await page.goto("/");
     const input = page.locator('input[placeholder*="URL"]');
     await input.fill("not-a-valid-url");
+    await input.press("Enter");
+    // Wait for the URL badge to appear
+    await expect(page.locator('text="not-a-valid-url"').first()).toBeVisible({
+      timeout: 5_000,
+    });
+    // Now click the analyze button
     const button = page.locator('button:has-text("Запустить анализ")');
     await button.click();
     await expect(page.locator('text="Ошибка анализа"')).toBeVisible({
@@ -26,6 +32,12 @@ test.describe("UX Analyzer E2E", () => {
     await page.goto("/");
     const input = page.locator('input[placeholder*="URL"]');
     await input.fill("https://example.com");
+    await input.press("Enter");
+    // Wait for the URL badge
+    await expect(page.locator('text="https://example.com"').first()).toBeVisible({
+      timeout: 5_000,
+    });
+    // Click analyze
     const button = page.locator('button:has-text("Запустить анализ")');
     await button.click();
 
@@ -42,10 +54,13 @@ test.describe("UX Analyzer E2E", () => {
     await page.goto("/");
     const input = page.locator('input[placeholder*="URL"]');
     await input.fill("https://example.com");
+    await input.press("Enter");
+    await expect(page.locator('text="https://example.com"').first()).toBeVisible({
+      timeout: 5_000,
+    });
     const button = page.locator('button:has-text("Запустить анализ")');
     await button.click();
 
-    // Wait for result tabs to appear (may time out in CI without ZAI key — that's OK)
     const tabs = page.locator('[role="tab"]');
     try {
       await expect(tabs.first()).toBeVisible({ timeout: 30_000 });
