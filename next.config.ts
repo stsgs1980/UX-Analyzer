@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["z-ai-web-dev-sdk"],
   reactStrictMode: false,
   turbopack: {
-    root: "/home/z/my-project/UX-Analyzer",
+    root: "/home/z/my-project",
   },
 };
 
