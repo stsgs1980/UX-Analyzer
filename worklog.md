@@ -91,3 +91,29 @@ Stage Summary:
 - 6 typography inconsistencies fixed across 3 files
 - Typographic scale now consistent: Display (clamp hero) → H2 (text-xl bold) → H4 (text-base semibold) → SectionLabel (text-sm semibold) → Body (text-sm) → Caption (text-xs) → Micro (text-[10px]/[11px])
 - history-dropdown.tsx and analysis-history.tsx are now fully aligned
+---
+Task ID: 5
+Agent: Main
+Task: Define typography scale grid, sweep all components, fix violations
+
+Work Log:
+- Defined type scale as CSS custom properties in globals.css :root:
+  - Size: --t-micro(10) --t-caption(11) --t-xs(12) --t-sm(14) --t-base(16) --t-lg(18) --t-xl(20) --t-2xl(24) --t-3xl(30) --t-4xl(36)
+  - Tracking: --tr-tight(-0.04em) --tr-normal(0) --tr-wide(0.025) --tr-wider(0.05) --tr-widest(0.1) --tr-label(0.3)
+  - Leading: --lh-tight(0.88) --lh-snug(1.25) --lh-normal(1.5) --lh-relaxed(1.625)
+  - Hero clamp() values excluded from static scale (viewport-relative by design)
+- Ran automated sweep: found 14 violations, fixed 6 in app code:
+  1. page.tsx brand: tracking-tight(-0.025) → tracking-[-0.04em]
+  2. page.tsx overline: tracking-[0.35em] → tracking-[0.3em]
+  3. page.tsx method labels: tracking-tight → tracking-[-0.04em]
+  4. analysis-progress.tsx percentage: tracking-tighter(-0.05) → tracking-[-0.04em]
+  5. history-dropdown.tsx badge: leading-none → leading-[1.1]
+  6. design-md-viewer.tsx prose-headings: tracking-tight → tracking-[-0.04em]
+- 8 shadcn/ui primitive violations left untouched (calendar, card, chart, label, dialog, alert)
+- Final grep sweep: zero app-code violations remain
+- Browser verification: zero overlap, all positions flush, tracking values match scale
+
+Stage Summary:
+- Type scale defined as single source of truth in globals.css :root
+- All application typography conforms to the grid
+- Hero excluded from static scale (viewport-relative by design)

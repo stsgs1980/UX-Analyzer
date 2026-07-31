@@ -111,7 +111,7 @@ export default function Home() {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Eye className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm font-semibold tracking-tight">UX Analyzer</span>
+            <span className="text-sm font-semibold tracking-[-0.04em]">UX Analyzer</span>
           </div>
           <div className="flex items-center gap-4">
             <HistoryDropdown />
@@ -137,7 +137,7 @@ export default function Home() {
         <section className="pt-10 sm:pt-16 lg:pt-24 pb-14 sm:pb-18">
           {/* Overline — whisper before the shout */}
           <div className="mb-4 sm:mb-8">
-            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.35em] text-muted-foreground/20">
+            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.3em] text-muted-foreground/20">
               8-разрезный анализ продукта
             </span>
           </div>
@@ -218,7 +218,7 @@ export default function Home() {
                       <span className="text-xs sm:text-sm font-mono text-muted-foreground/20 tabular-nums shrink-0 w-6 sm:w-8">
                         {m.num}
                       </span>
-                      <span className={`text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground/70 group-hover:text-foreground transition-colors duration-300 shrink-0 ${i === 7 ? "text-transparent bg-clip-text bg-gradient-to-r from-emerald-400/80 to-amber-400/60" : ""}`}>{m.label}</span>
+                      <span className={`text-lg sm:text-2xl lg:text-3xl font-bold tracking-[-0.04em] text-foreground/70 group-hover:text-foreground transition-colors duration-300 shrink-0 ${i === 7 ? "text-transparent bg-clip-text bg-gradient-to-r from-emerald-400/80 to-amber-400/60" : ""}`}>{m.label}</span>
                       <span className="text-xs sm:text-sm text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors duration-300 hidden sm:block">
                         {m.desc}
                       </span>

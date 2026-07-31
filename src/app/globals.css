@@ -57,6 +57,54 @@
    ═══════════════════════════════════════════ */
 :root {
   --radius: 0;
+
+  /* ═══════════════════════════════════════════
+     TYPOGRAPHIC SCALE — single source of truth
+     ═══════════════════════════════════════════
+     Step   Token          Value     Tailwind        Use
+     ─────────────────────────────────────────────────────────
+     -2     --t-micro      10px      text-[10px]     Badges, micro labels
+     -1     --t-caption    11px      text-[11px]     Timestamps, counters
+      0     --t-xs         12px      text-xs         Small labels, tabs
+      1     --t-sm         14px      text-sm         Body text (BASE)
+      2     --t-base       16px      text-base       Inputs, emphasis
+      3     --t-lg         18px      text-lg         Subheadings (h4)
+      4     --t-xl         20px      text-xl         Headings (h3)
+      5     --t-2xl        24px      text-2xl        Headings (h2)
+      6     --t-3xl        30px      text-3xl        Large display
+      7     --t-4xl        36px      text-4xl        Score display
+     ═══════════════════════════════════════════
+     HERO — viewport-relative, excluded from static scale:
+       Line 1: clamp(2.6rem, 12vw, 9.6rem)   bold    opacity 0.18
+       Line 2: clamp(2.4rem, 11.5vw, 9.2rem)  bold    opacity 0.35
+       Line 3: clamp(5rem, 24vw, 19.2rem)     black   emerald gradient
+     ═══════════════════════════════════════════ */
+  --t-micro: 0.625rem;
+  --t-caption: 0.6875rem;
+  --t-xs: 0.75rem;
+  --t-sm: 0.875rem;
+  --t-base: 1rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.25rem;
+  --t-2xl: 1.5rem;
+  --t-3xl: 1.875rem;
+  --t-4xl: 2.25rem;
+
+  /* Tracking scale (matches Tailwind where possible) */
+  --tr-tight: -0.04em;       /* tracking-[-0.04em] — our tight */
+  --tr-normal: 0em;          /* tracking-normal */
+  --tr-wide: 0.025em;        /* tracking-wide */
+  --tr-wider: 0.05em;        /* tracking-wider */
+  --tr-widest: 0.1em;        /* tracking-widest */
+  --tr-label: 0.3em;         /* tracking-[0.3em] — uppercase labels */
+
+  /* Leading scale */
+  --lh-tight: 0.88;
+  --lh-snug: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.625;
+
+  /* ── Theme colors ── */
   --background: oklch(0.09 0.005 160);
   --foreground: oklch(0.93 0.01 160);
   --card: oklch(0.13 0.008 160);

@@ -45,7 +45,7 @@ export function DesignMdViewer({ content }: DesignMdViewerProps) {
 
       {/* Markdown content - sanitized */}
       <div className="prose prose-invert prose-sm max-w-none
-        prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-tight
+        prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-[-0.04em]
         prose-p:text-muted-foreground prose-p:leading-relaxed
         prose-li:text-muted-foreground
         prose-strong:text-foreground

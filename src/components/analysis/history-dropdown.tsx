@@ -102,7 +102,7 @@ export function HistoryDropdown() {
         {count > 0 && (
           <span
             className={
-              "absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold tabular-nums leading-none px-1 " +
+              "absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold tabular-nums leading-[1.1] px-1 " +
               (open
                 ? "bg-emerald-400/20 text-emerald-400"
                 : "bg-white/10 text-muted-foreground/70")
