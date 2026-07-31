@@ -28,12 +28,12 @@ function ColorSwatch({ hex, name, usage, percentage }: ColorSwatchProps) {
 
   return (
     <div className="group flex items-center gap-3 border-b border-white/5 py-2.5">
-      <button
-        onClick={handleCopy}
-        className="shrink-0 w-10 h-10 border border-white/10 flex items-center justify-center transition-all duration-200 hover:scale-105 hover:border-white/20"
-        style={{ backgroundColor: hex }}
-        title={`Копировать ${hex}`}
-      >
+          <button
+            onClick={handleCopy}
+            className="shrink-0 w-10 h-10 border border-white/10 flex items-center justify-center transition-all duration-200 hover:scale-105 hover:border-white/20 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none"
+            style={{ backgroundColor: hex }}
+            title={`Копировать ${hex}`}
+          >
         {copied ? (
           <Check className={`h-3.5 w-3.5 ${isLight ? "text-black/60" : "text-white/60"}`} />
         ) : (
@@ -144,7 +144,7 @@ module.exports = {
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab("dominant")}
-            className={`text-xs px-3 py-1.5 border transition-all duration-200 ${
+            className={`text-xs px-3 py-1.5 border transition-all duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
               activeTab === "dominant"
                 ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
                 : "border-white/8 text-muted-foreground hover:text-foreground"
@@ -155,7 +155,7 @@ module.exports = {
           {allGroupColors.length > 0 && (
             <button
               onClick={() => setActiveTab("groups")}
-              className={`text-xs px-3 py-1.5 border transition-all duration-200 ${
+              className={`text-xs px-3 py-1.5 border transition-all duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
                 activeTab === "groups"
                   ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
                   : "border-white/8 text-muted-foreground hover:text-foreground"

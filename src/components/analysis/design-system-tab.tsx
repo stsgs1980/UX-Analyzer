@@ -232,6 +232,8 @@ export function DesignSystemTab({ data }: { data: AnalysisResult }) {
           <img
             src={imagePreview}
             alt="Анализируемое изображение"
+            width={512}
+            height={256}
             className="max-h-64 object-contain border border-white/8"
           />
         </div>

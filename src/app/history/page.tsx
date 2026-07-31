@@ -17,7 +17,7 @@ function getDomain(url: string): string {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(d);
 }
 
 export default function HistoryPage() {
@@ -47,7 +47,7 @@ export default function HistoryPage() {
       <header className="sticky top-0 z-50 border-b border-white/5 backdrop-blur-md">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-emerald-400" />
+            <Eye className="h-5 w-5 text-emerald-400" aria-hidden="true" />
             <span className="text-sm font-medium tracking-tight">UX Analyzer</span>
           </Link>
           <nav className="flex items-center gap-6">
@@ -61,14 +61,14 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold tracking-tight">История анализов</h1>
           {items.length > 0 && (
-            <button onClick={handleClearAll} className="text-xs text-muted-foreground hover:text-red-400 transition-colors">
-              Очистить всё
-            </button>
+          <button onClick={handleClearAll} className="text-xs text-muted-foreground hover:text-red-400 transition-colors" aria-label="Очистить всю историю">
+            Очистить всё
+          </button>
           )}
         </div>
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Загрузка...</p>
+          <p className="text-sm text-muted-foreground" aria-live="polite">Загрузка...</p>
         ) : items.length === 0 ? (
           <p className="text-sm text-muted-foreground">Нет анализов. Начните с главной страницы.</p>
         ) : (
@@ -85,7 +85,7 @@ export default function HistoryPage() {
                 <Link href={`/?id=${item.id}`} className="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   Открыть
                 </Link>
-                <button onClick={() => handleDelete(item.id)} className="text-xs text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => handleDelete(item.id)} className="text-xs text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Удалить ${getDomain(item.urls[0])}`}>
                   Удалить
                 </button>
               </div>

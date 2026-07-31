@@ -30,10 +30,10 @@ export function UrlInput() {
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        addUrl(inputUrl);
+        addUrl(e.currentTarget.value);
       }
     },
-    [inputUrl, addUrl]
+    [addUrl]
   );
 
   const handleFileChange = useCallback(
@@ -60,8 +60,10 @@ export function UrlInput() {
     <div className="space-y-4">
       <div className="flex gap-2">
         <div className="relative flex-1 group">
-          <Link className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-400 transition-colors" />
+          <label htmlFor="url-input" className="sr-only">URL продукта</label>
+          <Link className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-400 transition-colors" aria-hidden="true" />
           <Input
+            id="url-input"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -127,6 +129,8 @@ export function UrlInput() {
               <img
                 src={imageBase64}
                 alt="Preview"
+                width={80}
+                height={80}
                 className="h-20 w-20 object-cover border border-white/8 shrink-0"
               />
               <div className="text-xs text-muted-foreground leading-relaxed">

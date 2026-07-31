@@ -541,7 +541,7 @@ function HeuristicTab({ data }: { data: AnalysisResult }) {
       <div className="border-l-2 border-l-primary/40 pl-4 py-3">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className="flex items-baseline gap-1">
-            <span className={`text-4xl font-bold tabular-nums ${scoreColor(avg)}`}>
+            <span className={`text-4xl font-bold ${scoreColor(avg)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
               {avg.toFixed(1)}
             </span>
             <span className="text-lg text-muted-foreground">/4.0</span>
@@ -566,13 +566,13 @@ function HeuristicTab({ data }: { data: AnalysisResult }) {
                   <p className="text-xs text-muted-foreground">{item.observations}</p>
                 )}
                 {item.recommendation && (
-                  <p className="text-xs text-muted-foreground italic mt-1">
-                    💡 {item.recommendation}
-                  </p>
+                    <p className="text-xs text-muted-foreground italic mt-1">
+                      {item.recommendation}
+                    </p>
                 )}
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
-                <span className={`text-lg font-bold ${scoreColor(item.score)}`}>
+                <span className={`text-lg font-bold ${scoreColor(item.score)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
                   {item.score}
                 </span>
                 <div className="flex gap-0.5">
@@ -598,7 +598,7 @@ function HeuristicTab({ data }: { data: AnalysisResult }) {
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="py-12 text-center">
-      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" aria-hidden="true" />
       <p className="text-muted-foreground">{message}</p>
     </div>
   );

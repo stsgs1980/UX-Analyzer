@@ -221,7 +221,7 @@ export function AnalysisProgress() {
 
         {/* Time + percentage */}
         <div className="text-right shrink-0 pl-2">
-          <span className="text-lg font-bold text-emerald-400 tabular-nums tracking-[-0.04em]">
+          <span className="text-lg font-bold text-emerald-400 tabular-nums tracking-[-0.04em]" style={{ fontVariantNumeric: "tabular-nums" }}>
             {pct}<span className="text-xs text-emerald-400/40 ml-0.5">%</span>
           </span>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 justify-end mt-0.5">
