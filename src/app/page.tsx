@@ -8,7 +8,7 @@ import { AnalysisProgress } from "@/components/analysis/analysis-progress";
 import { AnalysisResults } from "@/components/analysis/analysis-results";
 import { AnalysisHistory } from "@/components/analysis/analysis-history";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
-import { Eye, Leaf, ScanSearch } from "lucide-react";
+import { Eye, Leaf } from "lucide-react";
 import Link from "next/link";
 
 const METHODOLOGIES = [
@@ -175,9 +175,39 @@ export default function Home() {
             BENTO GRID — Analysis Area
         ═══════════════════════════════════════════ */}
         <div className="bento-grid mb-16 sm:mb-24">
-          {/* URL Input — full width */}
-          <div className="bento-card p-6 bento-card-expanded" style={{ gridColumn: "span 8" }}>
+          {/* URL Input — span 5 */}
+          <div className="bento-card p-4" style={{ gridColumn: "span 5" }}>
             <UrlInput />
+          </div>
+
+          {/* Methods — span 3 */}
+          <div className="bento-card p-4" style={{ gridColumn: "span 3" }}>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground/40">
+                Методологии
+              </span>
+              <span className="text-[11px] sm:text-xs font-medium tabular-nums text-muted-foreground/30">
+                08
+              </span>
+            </div>
+            <div className="space-y-2" data-reveal-stagger>
+              {METHODOLOGIES.map((m, i) => (
+                <div
+                  key={i}
+                  data-reveal="left"
+                  className="group py-2 hover:pl-1 transition-all duration-300 cursor-default"
+                >
+                  <div className="flex items-baseline gap-2 sm:gap-3">
+                    <span className="text-[10px] sm:text-xs font-mono text-muted-foreground/20 tabular-nums shrink-0 w-5">
+                      {m.num}
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold tracking-[-0.03em] text-foreground/70 group-hover:text-foreground transition-colors duration-300 shrink-0">
+                      {m.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Progress — visible only when analyzing */}
@@ -189,7 +219,7 @@ export default function Home() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.3 }}
-                className="bento-card p-6 bento-card-expanded"
+                className="bento-card p-4 bento-card-expanded"
                 style={{ gridColumn: "span 8" }}
               >
                 <div ref={progressRef}>
@@ -219,66 +249,7 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        {/* ═══════════════════════════════════════════
-            METHODOLOGY INDEX — typographic grid
-            hidden when results are present
-        ═══════════════════════════════════════════ */}
-        <AnimatePresence>
-          {!result && (
-            <motion.section
-              initial="hidden"
-              animate="show"
-              exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-              transition={{ duration: 0.3 }}
-              className="pb-16 sm:pb-24"
-            >
-              {/* Section label */}
-              <div className="mb-10 sm:mb-14 flex items-center gap-4">
-                <span className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground/40">
-                  Методологии
-                </span>
-                <span className="flex-1 h-px bg-white/5" />
-                <span className="text-[11px] sm:text-xs font-medium tabular-nums text-muted-foreground/30">
-                  08
-                </span>
-              </div>
 
-              {/* Typographic grid — each method is a line */}
-              <div className="divide-y divide-white/5" data-reveal-stagger>
-                {METHODOLOGIES.map((m, i) => (
-                  <div
-                    key={i}
-                    data-reveal="left"
-                    className={`group py-5 sm:py-6 hover:pl-2 transition-all duration-300 cursor-default ${i === 7 ? "broken-line-top" : ""}`}
-                  >
-                    {/* Main line */}
-                    <div className="flex items-baseline gap-4 sm:gap-8">
-                      <span className="text-xs sm:text-sm font-mono text-muted-foreground/20 tabular-nums shrink-0 w-6 sm:w-8">
-                        {m.num}
-                      </span>
-                      <span className={`text-lg sm:text-2xl lg:text-3xl font-bold tracking-[-0.04em] text-foreground/70 group-hover:text-foreground transition-colors duration-300 shrink-0 ${i === 7 ? "text-transparent bg-clip-text bg-gradient-to-r from-emerald-400/80 to-amber-400/60" : ""}`}>{m.label}</span>
-                      <span className="text-xs sm:text-sm text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors duration-300 hidden sm:block">
-                        {m.desc}
-                      </span>
-                      <span className="flex-1 h-px bg-white/3 group-hover:bg-white/8 transition-colors duration-300 hidden sm:block" />
-                      {i === 7 && (
-                        <ScanSearch className="h-4 w-4 text-emerald-400/40 group-hover:text-emerald-400 transition-colors shrink-0 hidden sm:block" />
-                      )}
-                    </div>
-                    {/* Detail — expands on hover */}
-                    <div className="grid transition-all duration-500 ease-out group-hover:grid-rows-[1fr] grid-rows-[0fr]">
-                      <div className="overflow-hidden">
-                        <p className="pl-10 sm:pl-16 pt-3 text-sm text-muted-foreground/50 group-hover:text-muted-foreground/80 leading-relaxed transition-colors duration-500 max-w-2xl">
-                          {m.detail}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
 
         {/* ═══════════════════════════════════════════
             HISTORY
