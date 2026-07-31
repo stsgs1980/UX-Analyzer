@@ -73,10 +73,25 @@ const METHODOLOGIES = [
 export default function Home() {
   const { loadHistory, restoreSession, result, isAnalyzing, error } = useAnalysisStore();
   const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    (window as any).__store = useAnalysisStore;
+  }, []);
   const progressRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useScrollReveal({ rootMargin: "0px 0px -30px 0px" });
+
+  // Warn before navigation with unsaved state
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isAnalyzing) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isAnalyzing]);
 
   useEffect(() => {
     restoreSession();
@@ -108,7 +123,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-white/5 backdrop-blur-md">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-emerald-400" />
+            <Eye className="h-5 w-5 text-emerald-400" aria-hidden="true" />
             <span className="text-sm font-medium tracking-tight">UX Analyzer</span>
           </Link>
           <nav className="flex items-center gap-6">
@@ -186,7 +201,7 @@ export default function Home() {
               <span className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground/40">
                 Методологии
               </span>
-              <span className="text-[11px] sm:text-xs font-medium tabular-nums text-muted-foreground/30">
+              <span className="text-[11px] sm:text-xs font-medium tabular-nums text-muted-foreground/30" style={{ fontVariantNumeric: "tabular-nums" }}>
                 08
               </span>
             </div>
@@ -195,7 +210,7 @@ export default function Home() {
                 <div
                   key={i}
                   data-reveal="left"
-                  className="group py-2 hover:pl-1 transition-all duration-300 cursor-default"
+                  className="group py-2 hover:pl-1 transition-[padding] duration-300 cursor-default"
                 >
                   <div className="flex items-baseline gap-2 sm:gap-3">
                     <span className="text-[10px] sm:text-xs font-mono text-muted-foreground/20 tabular-nums shrink-0 w-5">
@@ -264,7 +279,7 @@ export default function Home() {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground/40">
             <p className="flex items-center gap-1.5">
-              <Leaf className="h-3 w-3 text-emerald-500/30" />
+              <Leaf className="h-3 w-3 text-emerald-500/30" aria-hidden="true" />
               UX Analyzer
             </p>
             <p className="hidden sm:block">

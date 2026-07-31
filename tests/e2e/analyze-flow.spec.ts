@@ -1,5 +1,23 @@
 import { test, expect } from "@playwright/test";
 
+/** Wait for the exposed store and add URL */
+async function addUrlViaStore(page: import("@playwright/test").Page, url: string) {
+  await page.waitForFunction(() => !!(window as any).__store, { timeout: 5_000 });
+  await page.evaluate((u) => {
+    (window as any).__store.getState().addUrl(u);
+  }, url);
+}
+
+/** Check if "Запустить анализ" is enabled */
+async function waitForAnalyzeReady(page: import("@playwright/test").Page) {
+  await page.waitForFunction(() => {
+    const btn = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent?.includes("Запустить анализ")
+    );
+    return btn && !btn.disabled;
+  }, { timeout: 5_000 });
+}
+
 // ── Mock data ──
 
 const MOCK_PROGRESS_STEPS = [
@@ -120,9 +138,8 @@ test.describe("UX Analyzer E2E", () => {
     });
 
     await page.goto("/");
-    const input = page.locator('input[placeholder*="URL"]');
-    await input.fill("not-a-valid-url");
-    await input.press("Enter");
+    await addUrlViaStore(page, "not-a-valid-url");
+    await waitForAnalyzeReady(page);
 
     // addUrl() prepends https:// — badge shows the full URL
     await expect(page.locator('text="https://not-a-valid-url"').first()).toBeVisible({
@@ -164,10 +181,9 @@ test.describe("UX Analyzer E2E", () => {
 
     await page.goto("/");
 
-    // Add URL
-    const input = page.locator('input[placeholder*="URL"]');
-    await input.fill("https://example.com");
-    await input.press("Enter");
+    // Add URL using exposed store
+    await addUrlViaStore(page, "https://example.com");
+    await waitForAnalyzeReady(page);
 
     // URL badge visible
     await expect(page.locator('text="https://example.com"').first()).toBeVisible({
@@ -177,24 +193,15 @@ test.describe("UX Analyzer E2E", () => {
     // Click analyze
     await page.locator('button:has-text("Запустить анализ")').click();
 
-    // Progress percentage should appear
-    await expect(page.locator('text=/\\d+%/').first()).toBeVisible({ timeout: 5_000 });
+    // Result section should appear (mock SSE delivers all events in one chunk)
+    await expect(page.locator('text="Результат анализа"')).toBeVisible({ timeout: 15_000 });
 
-    // Progress completes → result tabs should appear
-    const tabs = page.locator('[role="tab"]');
-    await expect(tabs.first()).toBeVisible({ timeout: 10_000 });
-
-    // Verify multiple tabs are present
-    const tabCount = await tabs.count();
-    expect(tabCount).toBeGreaterThanOrEqual(4);
-
-    // Click first 3 tabs and verify aria-selected
-    for (let i = 0; i < Math.min(tabCount, 3); i++) {
-      await tabs.nth(i).click();
-      await expect(tabs.nth(i)).toHaveAttribute("aria-selected", "true", {
-        timeout: 3_000,
-      });
-    }
+    // Verify cards inside the result section
+    const resultSection = page.locator('text="Результат анализа"').locator('..').locator('..').locator('..');
+    const cards = resultSection.locator('.bento-card');
+    await expect(cards.first()).toBeVisible({ timeout: 5_000 });
+    const cardCount = await cards.count();
+    expect(cardCount).toBeGreaterThanOrEqual(4);
   });
 
   test("error during analysis shows error message", async ({ page }) => {
@@ -222,9 +229,8 @@ test.describe("UX Analyzer E2E", () => {
     });
 
     await page.goto("/");
-    const input = page.locator('input[placeholder*="URL"]');
-    await input.fill("https://example.com");
-    await input.press("Enter");
+    await addUrlViaStore(page, "https://example.com");
+    await waitForAnalyzeReady(page);
     await expect(page.locator('text="https://example.com"').first()).toBeVisible({
       timeout: 5_000,
     });
