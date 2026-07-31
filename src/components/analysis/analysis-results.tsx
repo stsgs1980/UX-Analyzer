@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import { useAnalysisStore, type AnalysisResult } from "@/store/analysis-store";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -26,9 +26,12 @@ import {
   Target,
   CheckSquare,
   ScanSearch,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { DesignSystemTab } from "./design-system-tab";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 const CONFIDENCE_COLORS: Record<string, string> = {
   high: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
@@ -626,22 +629,106 @@ function MetaInfo({ data }: { data: AnalysisResult }) {
 /* ─── MAIN RESULTS COMPONENT ─── */
 export function AnalysisResults() {
   const { result, reset } = useAnalysisStore();
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   if (!result) return null;
 
   const isBatch = result.type === "batch";
   const jsonStr = JSON.stringify(result, null, 2);
 
-  const tabs = [
-    { id: "teardown", label: "Teardown", icon: Palette },
-    { id: "deconstruction", label: "Deconstruction", icon: Layers },
-    { id: "spec", label: "Spec", icon: FileText },
-    ...(isBatch ? [{ id: "patterns", label: "Patterns", icon: GitCompare }] : []),
-    { id: "reverse", label: "Reverse Eng.", icon: Cpu },
-    { id: "audit", label: "Audit", icon: AlertTriangle },
-    { id: "heuristic", label: "Heuristics", icon: ClipboardCheck },
-    { id: "design-system", label: "Design System", icon: ScanSearch },
+  type CardConfig = {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    colSpan: number;
+    summary: string;
+    tab: React.ComponentType<{ data: AnalysisResult }>;
+    condition?: boolean;
+  };
+
+  const cards: CardConfig[] = [
+    {
+      id: "teardown",
+      label: "Teardown",
+      icon: Palette,
+      colSpan: 1,
+      summary: result.teardown?.title || "Визуальный разбор продукта",
+      tab: TeardownTab,
+    },
+    {
+      id: "deconstruction",
+      label: "Deconstruction",
+      icon: Layers,
+      colSpan: 1,
+      summary: result.deconstruction?.layers
+        ? `${result.deconstruction.layers.length} смысловых слоёв`
+        : "Смысловые слои продукта",
+      tab: DeconstructionTab,
+    },
+    {
+      id: "spec",
+      label: "Spec",
+      icon: FileText,
+      colSpan: 1,
+      summary: result.spec?.functionalRequirements
+        ? `${result.spec.functionalRequirements.length} FR`
+        : "Спецификация",
+      tab: SpecTab,
+    },
+    ...(isBatch
+      ? [
+          {
+            id: "patterns",
+            label: "Patterns",
+            icon: GitCompare,
+            colSpan: 1,
+            summary: result.patternMining?.summary || "Паттерны между URL",
+            tab: PatternMiningTab,
+            condition: isBatch,
+          },
+        ]
+      : []),
+    {
+      id: "reverse",
+      label: "Reverse Eng.",
+      icon: Cpu,
+      colSpan: 1,
+      summary: "Реконструкция архитектуры",
+      tab: ReverseEngineeringTab,
+    },
+    {
+      id: "audit",
+      label: "Audit",
+      icon: AlertTriangle,
+      colSpan: 2,
+      summary: result.audit?.problems
+        ? `${result.audit.problems.length} проблем`
+        : "Аудит UI/UX",
+      tab: AuditTab,
+    },
+    {
+      id: "heuristic",
+      label: "Heuristics",
+      icon: ClipboardCheck,
+      colSpan: 1,
+      summary: result.heuristicEvaluation?.averageScore
+        ? `Балл ${result.heuristicEvaluation.averageScore.toFixed(1)}`
+        : "Эвристическая оценка",
+      tab: HeuristicTab,
+    },
+    {
+      id: "design-system",
+      label: "Design System",
+      icon: ScanSearch,
+      colSpan: 3,
+      summary: "Цвета, типографика, компоненты",
+      tab: DesignSystemTab,
+    },
   ];
+
+  const toggleCard = (id: string) => {
+    setExpandedCard((prev) => (prev === id ? null : id));
+  };
 
   return (
     <div className="space-y-4">
@@ -672,52 +759,64 @@ export function AnalysisResults() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="teardown" className="w-full">
-        <TabsList className="w-full flex flex-wrap h-auto gap-1 border-b border-white/5 pb-0">
-          {tabs.map((tab) => (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              className="flex items-center gap-1.5 text-xs sm:text-sm data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
-            >
-              <tab.icon className="h-3.5 w-3.5" />
-              <span className="hidden xs:inline">{tab.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {/* Bento Grid */}
+      <div className="bento-grid">
+        <AnimatePresence mode="wait">
+          {cards.map((card) => {
+            const isExpanded = expandedCard === card.id;
+            const Icon = card.icon;
+            const TabComponent = card.tab;
 
-        <ScrollArea className="h-auto">
-          <div className="pt-4 pb-2">
-            <TabsContent value="teardown">
-              <TeardownTab data={result} />
-            </TabsContent>
-            <TabsContent value="deconstruction">
-              <DeconstructionTab data={result} />
-            </TabsContent>
-            <TabsContent value="spec">
-              <SpecTab data={result} />
-            </TabsContent>
-            {isBatch && (
-              <TabsContent value="patterns">
-                <PatternMiningTab data={result} />
-              </TabsContent>
-            )}
-            <TabsContent value="reverse">
-              <ReverseEngineeringTab data={result} />
-            </TabsContent>
-            <TabsContent value="audit">
-              <AuditTab data={result} />
-            </TabsContent>
-            <TabsContent value="heuristic">
-              <HeuristicTab data={result} />
-            </TabsContent>
-            <TabsContent value="design-system">
-              <DesignSystemTab data={result} />
-            </TabsContent>
-          </div>
-        </ScrollArea>
-      </Tabs>
+            return (
+              <motion.div
+                key={card.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className={`bento-card p-4 cursor-pointer ${
+                  isExpanded ? "bento-card-expanded" : ""
+                }`}
+                style={
+                  isExpanded
+                    ? undefined
+                    : { gridColumn: `span ${card.colSpan}` }
+                }
+                onClick={() => toggleCard(card.id)}
+              >
+                {/* Card Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-emerald-400" />
+                    <span className="text-sm font-medium">{card.label}</span>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+
+                {/* Card Content */}
+                {isExpanded ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <TabComponent data={result} />
+                  </motion.div>
+                ) : (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {card.summary}
+                  </p>
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
