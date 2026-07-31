@@ -9,8 +9,8 @@ import { AnalysisResults } from "@/components/analysis/analysis-results";
 import { AnalysisHistory } from "@/components/analysis/analysis-history";
 import { Separator } from "@/components/ui/separator";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
-import { Eye, Leaf, Zap, ScanSearch } from "lucide-react";
-import { HistoryDropdown } from "@/components/analysis/history-dropdown";
+import { Eye, Leaf, ScanSearch } from "lucide-react";
+import Link from "next/link";
 
 const METHODOLOGIES = [
   {
@@ -106,24 +106,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col organic-bg">
-      {/* Header — minimal, line bottom */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-md relative">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Eye className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm font-semibold tracking-[-0.04em]">UX Analyzer</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <HistoryDropdown />
-            <span className="hidden sm:inline text-[10px] text-emerald-400/50 font-medium uppercase tracking-widest flex items-center gap-1.5">
-              <Leaf className="h-3 w-3" />
-              Sustainable
-            </span>
-            <span className="hidden sm:inline text-[10px] text-amber-400/50 font-medium uppercase tracking-widest flex items-center gap-1.5">
-              <Zap className="h-3 w-3" />
-              AI + VLM
-            </span>
-          </div>
+      <header className="sticky top-0 z-50 border-b border-white/5 backdrop-blur-md">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Eye className="h-5 w-5 text-emerald-400" />
+            <span className="text-sm font-medium tracking-tight">UX Analyzer</span>
+          </Link>
+          <nav className="flex items-center gap-6">
+            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Анализ
+            </Link>
+            <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              История
+            </Link>
+          </nav>
         </div>
       </header>
 
