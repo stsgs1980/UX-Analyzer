@@ -131,37 +131,52 @@ export default function Home() {
       <main ref={mainRef} className="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6">
 
         {/* ═══════════════════════════════════════════
-            MACRO-TYPOGRAPHY HERO — STATIC
+            MACRO-TYPOGRAPHY HERO — ARCHITECTURAL BLOCK
+            W 1280 — each line fills width, text IS layout
         ═══════════════════════════════════════════ */}
-        <section className="pt-12 sm:pt-20 lg:pt-28 pb-16 sm:pb-20">
+        <section className="pt-10 sm:pt-16 lg:pt-24 pb-14 sm:pb-18">
           {/* Overline — whisper before the shout */}
-          <div className="mb-5 sm:mb-8">
-            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.35em] text-muted-foreground/30">
+          <div className="mb-4 sm:mb-8">
+            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.35em] text-muted-foreground/20">
               8-разрезный анализ продукта
             </span>
           </div>
 
-          {/* Supporting line — wide tracking, breath, transparent */}
-          <p className="text-[clamp(1.1rem,2.5vw,2.2rem)] font-medium tracking-[0.14em] text-foreground/75 leading-[1.1] mb-1 sm:mb-3">
-            Инженерно-дизайнерский
-          </p>
+          {/* Three-line architectural stack — width-filling macro type */}
+          <div>
+            {/* Line 1 — foundation, fills ~90% at W1280 */}
+            <p
+              className="font-bold leading-[0.88] tracking-[-0.03em] text-foreground/[0.18] text-[clamp(2.6rem,12vw,9.6rem)]"
+              aria-hidden="true"
+            >
+              Инженерно-
+            </p>
 
-          {/* Main architectural word — РАЗБОР dominates viewport */}
-          <h1
-            className="font-black leading-[0.82] tracking-[-0.04em] text-[clamp(3.2rem,14vw,15rem)]"
-            aria-label="РАЗБОР"
-          >
-            <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-400 to-emerald-300/60">Р</span><span className="text-foreground/[0.85]">А</span><span className="text-foreground/[0.85]">З</span><span className="text-transparent bg-clip-text bg-gradient-to-br from-amber-400/90 to-amber-300/40 text-[1.08em]">Б</span><span className="text-foreground/[0.85]">О</span><span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-400/70 to-amber-400/50">Р</span>
-          </h1>
+            {/* Line 2 — builds weight, fills ~93% at W1280 */}
+            <p
+              className="font-bold leading-[0.88] tracking-[-0.03em] text-foreground/[0.35] text-[clamp(2.4rem,11.5vw,9.2rem)] -mt-[0.14em]"
+              aria-hidden="true"
+            >
+              дизайнерский
+            </p>
+
+            {/* Line 3 — MONUMENTAL, fills ~97% at W1280, 2.5× the size */}
+            <h1
+              className="font-black leading-[0.82] tracking-[-0.04em] text-[clamp(5rem,24vw,19.2rem)] -mt-[0.08em]"
+              aria-label="Инженерно-дизайнерский разбор"
+            >
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-emerald-300/80">разбор</span>
+            </h1>
+          </div>
 
           {/* Descriptor — typographic continuation */}
-          <p className="mt-6 sm:mt-10 text-sm sm:text-[15px] text-muted-foreground/60 leading-relaxed font-light max-w-lg">
+          <p className="mt-6 sm:mt-10 text-sm sm:text-[15px] text-muted-foreground/40 leading-relaxed font-light max-w-lg">
             Вставьте ссылку или загрузите изображение — получите полный AI-анализ
             <br className="hidden sm:block" /> по 8 профессиональным методологиям + VLM.
           </p>
 
           {/* URL Input */}
-          <div className="mt-8 sm:mt-10 border-t border-b border-emerald-500/12 py-8 sm:py-10">
+          <div className="mt-8 sm:mt-10 border-t border-b border-emerald-500/8 py-8 sm:py-10">
             <UrlInput />
           </div>
         </section>

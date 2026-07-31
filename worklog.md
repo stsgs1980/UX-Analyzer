@@ -47,3 +47,25 @@ Stage Summary:
 - E2E tests now resilient to missing ZAI SDK in CI
 - Bun version pinned for CI stability
 - All local tests green, pushed to GitHub
+---
+Task ID: 3
+Agent: Main
+Task: Redesign "Инженерно-дизайнерский разбор" heading with Macro-Typography at W 1280
+
+Work Log:
+- Read current page.tsx heading structure (2-line: supporting text + massive "РАЗБОР")
+- Redesigned as 3-line architectural stack for true macro-typography:
+  - Line 1 "Инженерно-" — 12vw (9.6rem at 1280), bold, opacity 0.18
+  - Line 2 "дизайнерский" — 11.5vw (9.2rem at 1280), bold, opacity 0.35
+  - Line 3 "разбор" — 24vw (19.2rem at 1280), black weight, emerald center-pulse gradient
+- Applied tight line-height (0.82-0.88) with negative margins for dense architectural compression
+- VLM v1 analysis revealed gradient (emerald→amber/50) appeared as clipping — fixed to monochromatic emerald center-pulse (from-emerald-300 via-emerald-400 to-emerald-300/80)
+- VLM v3 confirmed: word fully visible, even/balanced color, every letter clearly readable
+- Mobile verification (375px): readable, 25-30% viewport height, strong F-pattern composition
+- Lint clean, compilation successful
+
+Stage Summary:
+- Macro-typography heading redesigned as 3-line width-filling architectural block at W 1280
+- Each line fills ~90-96% of container width, 2.5× size cascade creates monumental feel
+- Monochromatic emerald gradient ensures full word readability
+- Responsive via clamp(), works on both desktop and mobile
