@@ -133,37 +133,35 @@ export default function Home() {
         {/* ═══════════════════════════════════════════
             MACRO-TYPOGRAPHY HERO — STATIC
         ═══════════════════════════════════════════ */}
-        <section className="pt-16 sm:pt-24 lg:pt-32 pb-16 sm:pb-20">
-          {/* Overline label */}
-          <div className="mb-8 sm:mb-12">
-            <span className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground/60">
+        <section className="pt-12 sm:pt-20 lg:pt-28 pb-16 sm:pb-20">
+          {/* Overline — whisper before the shout */}
+          <div className="mb-5 sm:mb-8">
+            <span className="text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.35em] text-muted-foreground/30">
               8-разрезный анализ продукта
             </span>
           </div>
 
-          {/* Main headline — macro typography */}
-          <div className="space-y-0">
-            <h1 className="text-[clamp(2.5rem,8vw,7rem)] font-bold leading-[0.9] tracking-tighter text-foreground">
-              Инженерно-
-            </h1>
-            <h1 className="text-[clamp(2.5rem,8vw,7rem)] font-bold leading-[0.9] tracking-tighter text-foreground">
-              дизайнерский
-            </h1>
-            <h1 className="text-[clamp(2.5rem,8vw,7rem)] font-bold leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-300 to-amber-400">
-              разбор
-            </h1>
-          </div>
+          {/* Supporting line — wide tracking, breath, transparent */}
+          <p className="text-[clamp(1.1rem,2.5vw,2.2rem)] font-medium tracking-[0.14em] text-foreground/75 leading-[1.1] mb-1 sm:mb-3">
+            Инженерно-дизайнерский
+          </p>
 
-          {/* Descriptor line */}
-          <div className="mt-10 sm:mt-14 border-t border-white/8 pt-6 max-w-xl">
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Вставьте ссылку или загрузите изображение — получите полный AI-анализ
-              <br className="hidden sm:block" /> по 8 профессиональным методологиям + VLM.
-            </p>
-          </div>
+          {/* Main architectural word — РАЗБОР dominates viewport */}
+          <h1
+            className="font-black leading-[0.82] tracking-[-0.04em] text-[clamp(3.2rem,14vw,15rem)]"
+            aria-label="РАЗБОР"
+          >
+            <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-400 to-emerald-300/60">Р</span><span className="text-foreground/[0.85]">А</span><span className="text-foreground/[0.85]">З</span><span className="text-transparent bg-clip-text bg-gradient-to-br from-amber-400/90 to-amber-300/40 text-[1.08em]">Б</span><span className="text-foreground/[0.85]">О</span><span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-400/70 to-amber-400/50">Р</span>
+          </h1>
 
-          {/* URL Input — integrated into typographic layout */}
-          <div className="mt-10 sm:mt-14 border-t border-b border-emerald-500/12 py-8 sm:py-10">
+          {/* Descriptor — typographic continuation */}
+          <p className="mt-6 sm:mt-10 text-sm sm:text-[15px] text-muted-foreground/60 leading-relaxed font-light max-w-lg">
+            Вставьте ссылку или загрузите изображение — получите полный AI-анализ
+            <br className="hidden sm:block" /> по 8 профессиональным методологиям + VLM.
+          </p>
+
+          {/* URL Input */}
+          <div className="mt-8 sm:mt-10 border-t border-b border-emerald-500/12 py-8 sm:py-10">
             <UrlInput />
           </div>
         </section>
