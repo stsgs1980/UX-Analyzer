@@ -478,3 +478,50 @@ html {
 *, *::before, *::after {
   border-radius: 0 !important;
 }
+
+/* ═══ Bento Grid ═══ */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1023px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══ Bento Card ═══ */
+.bento-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bento-card:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(110, 231, 183, 0.03);
+}
+
+.bento-card-expanded {
+  grid-column: span 8;
+}
+
+@media (max-width: 1023px) {
+  .bento-card-expanded {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 767px) {
+  .bento-card-expanded {
+    grid-column: span 1;
+  }
+}
