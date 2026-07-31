@@ -497,12 +497,11 @@ export async function POST(request: NextRequest) {
       analysisResult.meta = {
         dataSources,
         aiProvider: aiProviderRef.current,
-        confidence: pageContents.length > 0 || vlmResult ? "medium" : "low",
+        confidence: vlmResult && pageContents.length > 0 ? "high" : pageContents.length > 0 || vlmResult ? "medium" : "low",
+        missingData: [] as string[],
       };
-      if (extractedImageUrl) analysisResult.extractedImageUrl = extractedImageUrl;
-      if (pinterestData) analysisResult.pinterestData = pinterestData;
-      // Only store image preview if it's a URL, not base64
       if (extractedImageUrl) analysisResult.imagePreviewUrl = extractedImageUrl;
+      if (pinterestData) analysisResult.pinterestData = pinterestData;
 
       // ═══ STEP 5: DESIGN.md (only if VLM succeeded) ═══
       if (vlmResult) {

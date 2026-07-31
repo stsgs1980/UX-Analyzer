@@ -31,7 +31,7 @@ export const VLM_ANALYSIS_PROMPT = `Ты — старший визуальный
   },
   "layout": {
     "gridType": "12-col|8-col|flexbox|custom",
-    "spacing": "описание间距 системы",
+    "spacing": "описание системы отступов",
     "alignment": "left|center|mixed",
     "density": "compact|normal|spacious",
     "maxContentWidth": "1200px|1440px|full"

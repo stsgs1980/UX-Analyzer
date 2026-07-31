@@ -18,4 +18,4 @@ try {
   console.warn('[db] Prisma init failed — database features disabled:', e)
 }
 
-export const db = _db!
+export const db = _db;
