@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: analyze-flow.spec.ts >> UX Analyzer E2E >> result tabs are clickable
-- Location: tests/e2e/analyze-flow.spec.ts:39:7
+- Name: analyze-flow.spec.ts >> UX Analyzer E2E >> analysis flow shows progress and handles completion or error
+- Location: tests/e2e/analyze-flow.spec.ts:31:7
 
 # Error details
 
