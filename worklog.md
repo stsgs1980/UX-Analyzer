@@ -84,3 +84,23 @@ Stage Summary:
 - Test infrastructure: fixtures + unit tests for rsc-extract and reference-code steps
 - Build: passing, pushed to https://github.com/stsgs1980/UX-Analyzer.git (f74ee02)
 - 5 rsc-extract test failures are pre-existing (regex matching issues with HTML entities)
+---
+Task ID: 2
+Agent: main
+Task: Fix 5 pre-existing RSC extract test failures
+
+Work Log:
+- Debugged all 5 failing tests: script preloads, RSC chunks, use client, summary, fixture
+- Root causes identified:
+  1. Script preloads: regex captured path with chunks/ prefix; test expected bare filename → fixed regex
+  2. RSC chunks: regex used . (dot) which does not match newlines in inline scripts → simplified to /self\.__next_f\.push\(\[(\d+)/g
+  3. Use client: bun regex engine bug — regex fails to match identical byte sequences constructed via String.fromCharCode() in template literals → switched to String.includes()
+  4. Summary: cascading from bugs 2 and 3
+  5. Fixture __NEXT_DATA__: bun JSON parser fails on trailing content after balanced {} → added fallback balanced-JSON parser
+- All 77 unit tests now pass (was 72/77)
+- Build passes, pushed to main (1a6ed03)
+
+Stage Summary:
+- 5 RSC extract bugs fixed in production code and tests
+- Discovered bun regex engine quirk with String.fromCharCode-constructed strings
+- Production RSC extraction is more robust for real-world HTML pages
