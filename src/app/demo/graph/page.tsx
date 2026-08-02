@@ -105,8 +105,8 @@ export default function DemoGraphPage() {
 
       {/* Main area */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* Flow canvas — explicit width/height */}
-        <div style={{ flex: 1, width: 0, height: 0 }}>
+        {/* Flow canvas — must have explicit dimensions for React Flow */}
+        <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
           <ReactFlow
             nodes={filteredNodes}
             edges={filteredEdges}
