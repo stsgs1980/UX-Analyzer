@@ -35,7 +35,9 @@ export function DesignNode({ data, selected }: NodeProps) {
         padding: pad,
         maxWidth: 220,
         background: selected ? "oklch(0.15 0.01 160)" : "oklch(0.11 0.007 160)",
-        border: `1px solid ${selected ? color : "rgba(255,255,255,0.06)"}`,
+        borderTop: `1px solid ${selected ? color : "rgba(255,255,255,0.06)"}`,
+        borderRight: `1px solid ${selected ? color : "rgba(255,255,255,0.06)"}`,
+        borderBottom: `1px solid ${selected ? color : "rgba(255,255,255,0.06)"}`,
         borderLeft: `2px solid ${color}`,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
