@@ -127,3 +127,26 @@ Stage Summary:
 - 87/87 tests pass with bun run test (was 74/88 with failures)
 - Playwright E2E tests run via separate `bun run test:e2e` command
 - --isolate prevents mock leakage between test files
+---
+Task ID: 2
+Agent: Main Agent
+Task: Implement Re-run analysis from history
+
+Work Log:
+- Explored history page, store, analyze route, API routes, Prisma schema
+- Found critical dedup issue: /api/analyze returns cached result for same URLs
+- Added forceRerun parameter to /api/analyze route to skip dedup check
+- Updated store.rerunAnalysis() to pass forceRerun=true to startAnalysis()
+- Added toast error for image upload re-run attempts
+- Added sourceType to GET /api/analyses response
+- Added sourceType to HistoryItem interface in store
+- Enhanced /history page: RotateCcw icon, conditional enabled/disabled for sourceType
+- Added Re-run button to in-page AnalysisHistory component (hover, amber color)
+- Fixed TS error in url-input.tsx (startAnalysis event handler)
+- All 100 tests pass, TypeScript clean
+- Pushed as c55dcbe
+
+Stage Summary:
+- Re-run from history now works: bypasses dedup cache via forceRerun=true
+- Image upload analyses correctly show disabled re-run
+- Both /history page and in-page sidebar have Re-run buttons
