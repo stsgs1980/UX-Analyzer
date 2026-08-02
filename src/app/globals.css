@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -37,86 +38,526 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --color-eco: var(--eco);
+  --color-eco-foreground: var(--eco-foreground);
+  --color-eco-muted: var(--eco-muted);
+  --color-earth: var(--earth);
+  --color-earth-foreground: var(--earth-foreground);
+  --color-earth-muted: var(--earth-muted);
+  --color-ocean: var(--ocean);
+  --color-ocean-foreground: var(--ocean-foreground);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
 }
 
+/* ═══════════════════════════════════════════
+   SUSTAINABLE DARK THEME — OLED-friendly deep dark
+   ═══════════════════════════════════════════ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0;
+
+  /* ═══════════════════════════════════════════
+     TYPOGRAPHIC SCALE — single source of truth
+     ═══════════════════════════════════════════
+     Step   Token          Value     Tailwind        Use
+     ─────────────────────────────────────────────────────────
+     -2     --t-micro      10px      text-[10px]     Badges, micro labels
+     -1     --t-caption    11px      text-[11px]     Timestamps, counters
+      0     --t-xs         12px      text-xs         Small labels, tabs
+      1     --t-sm         14px      text-sm         Body text (BASE)
+      2     --t-base       16px      text-base       Inputs, emphasis
+      3     --t-lg         18px      text-lg         Subheadings (h4)
+      4     --t-xl         20px      text-xl         Headings (h3)
+      5     --t-2xl        24px      text-2xl        Headings (h2)
+      6     --t-3xl        30px      text-3xl        Large display
+      7     --t-4xl        36px      text-4xl        Score display
+     ═══════════════════════════════════════════
+     HERO — viewport-relative, excluded from static scale:
+       Line 1: clamp(2.6rem, 12vw, 9.6rem)   bold    opacity 0.18
+       Line 2: clamp(2.4rem, 11.5vw, 9.2rem)  bold    opacity 0.35
+       Line 3: clamp(5rem, 24vw, 19.2rem)     black   emerald gradient
+     ═══════════════════════════════════════════ */
+  --t-micro: 0.625rem;
+  --t-caption: 0.6875rem;
+  --t-xs: 0.75rem;
+  --t-sm: 0.875rem;
+  --t-base: 1rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.25rem;
+  --t-2xl: 1.5rem;
+  --t-3xl: 1.875rem;
+  --t-4xl: 2.25rem;
+
+  /* Tracking scale (matches Tailwind where possible) */
+  --tr-tight: -0.04em;       /* tracking-[-0.04em] — our tight */
+  --tr-normal: 0em;          /* tracking-normal */
+  --tr-wide: 0.025em;        /* tracking-wide */
+  --tr-wider: 0.05em;        /* tracking-wider */
+  --tr-widest: 0.1em;        /* tracking-widest */
+  --tr-label: 0.3em;         /* tracking-[0.3em] — uppercase labels */
+
+  /* Leading scale */
+  --lh-tight: 0.88;
+  --lh-snug: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.625;
+
+  /* Paint containment — prevents glyph overflow on tight leading */
+  /* Required for macro-typography with leading < 1.0 */
+  --contain-paint: contain paint;
+
+  /* ── Theme colors ── */
+  --background: oklch(0.09 0.005 160);
+  --foreground: oklch(0.93 0.01 160);
+  --card: oklch(0.13 0.008 160);
+  --card-foreground: oklch(0.93 0.01 160);
+  --popover: oklch(0.13 0.008 160);
+  --popover-foreground: oklch(0.93 0.01 160);
+  --primary: oklch(0.72 0.17 155);
+  --primary-foreground: oklch(0.12 0.02 160);
+  --secondary: oklch(0.18 0.012 160);
+  --secondary-foreground: oklch(0.88 0.01 160);
+  --muted: oklch(0.17 0.01 160);
+  --muted-foreground: oklch(0.6 0.02 160);
+  --accent: oklch(0.20 0.015 160);
+  --accent-foreground: oklch(0.9 0.01 160);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.22 0.015 160);
+  --input: oklch(0.20 0.012 160);
+  --ring: oklch(0.72 0.17 155);
+
+  /* Custom semantic tokens */
+  --eco: oklch(0.72 0.17 155);
+  --eco-foreground: oklch(0.12 0.02 160);
+  --eco-muted: oklch(0.72 0.17 155 / 15%);
+  --earth: oklch(0.75 0.12 75);
+  --earth-foreground: oklch(0.12 0.02 75);
+  --earth-muted: oklch(0.75 0.12 75 / 15%);
+  --ocean: oklch(0.65 0.1 230);
+  --ocean-foreground: oklch(0.95 0.01 230);
+
+  --chart-1: oklch(0.72 0.17 155);
+  --chart-2: oklch(0.75 0.12 75);
+  --chart-3: oklch(0.65 0.1 230);
+  --chart-4: oklch(0.68 0.15 320);
+  --chart-5: oklch(0.70 0.14 45);
+
+  --sidebar: oklch(0.11 0.007 160);
+  --sidebar-foreground: oklch(0.9 0.01 160);
+  --sidebar-primary: oklch(0.72 0.17 155);
+  --sidebar-primary-foreground: oklch(0.12 0.02 160);
+  --sidebar-accent: oklch(0.18 0.012 160);
+  --sidebar-accent-foreground: oklch(0.9 0.01 160);
+  --sidebar-border: oklch(0.22 0.015 160);
+  --sidebar-ring: oklch(0.72 0.17 155);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
+/* ═══════════════════════════════════════════
+   LINEAR DESIGN — NO RECTANGLES, ONLY LINES
+   ═══════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Macro-typography selection */
+::selection {
+  background: oklch(0.72 0.17 155 / 25%);
+  color: oklch(0.95 0.01 160);
+}
+
+/* Override all shadcn card backgrounds — transparent */
+@layer components {
+  [class*="card"],
+  [data-slot="card"],
+  [data-radix-collection-item] {
+    background: transparent;
+  }
+}
+
+/* ── Line-based accent utilities ── */
+.line-accent {
+  border-left: 2px solid oklch(0.72 0.17 155);
+  padding-left: 1rem;
+}
+
+.line-accent-earth {
+  border-left: 2px solid oklch(0.75 0.12 75);
+  padding-left: 1rem;
+}
+
+.line-accent-ocean {
+  border-left: 2px solid oklch(0.65 0.1 230);
+  padding-left: 1rem;
+}
+
+.line-bottom {
+  border-bottom: 1px solid oklch(1.0 0 0 / 8%);
+}
+
+.line-top {
+  border-top: 1px solid oklch(1.0 0 0 / 8%);
+}
+
+.line-hover:hover {
+  border-left-color: oklch(0.75 0.12 75);
+}
+
+/* ── Skew decorative elements ── */
+.skew-bg {
+  transform: skewX(-12deg);
+}
+
+.skew-bg-inner {
+  transform: skewX(12deg);
+}
+
+/* ── Diagonal line decorations ── */
+.diagonal-stripe {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    oklch(1.0 0 0 / 3%),
+    oklch(1.0 0 0 / 3%) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}
+
+/* ── Line glow (no box shadow, just line glow) ── */
+.line-glow-eco {
+  text-shadow: 0 0 12px oklch(0.72 0.17 155 / 40%);
+}
+
+/* ═══════════════════════════════════════════
+   BACKGROUND — ultra-minimal for macro-typography
+   ═══════════════════════════════════════════ */
+.organic-bg {
+  background:
+    linear-gradient(180deg, oklch(0.72 0.17 155 / 3%) 0%, transparent 30%),
+    oklch(0.09 0.005 160);
+}
+
+/* ═══════════════════════════════════════════
+   CUSTOM SCROLLBAR
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.72 0.17 155 / 20%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.72 0.17 155 / 40%);
+}
+
+/* ═══════════════════════════════════════════
+   SMOOTH SCROLL
+   ═══════════════════════════════════════════ */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL-REVEAL ANIMATIONS
+   ═══════════════════════════════════════════ */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+              transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+[data-reveal="left"] {
+  transform: translateX(-24px);
+}
+
+[data-reveal="right"] {
+  transform: translateX(24px);
+}
+
+[data-reveal="scale"] {
+  transform: scale(0.95);
+}
+
+[data-reveal].revealed {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal].revealed {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Stagger children */
+[data-reveal-stagger] > [data-reveal]:nth-child(1) { transition-delay: 0.00s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(2) { transition-delay: 0.06s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(3) { transition-delay: 0.12s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(4) { transition-delay: 0.18s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(5) { transition-delay: 0.24s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(6) { transition-delay: 0.30s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(7) { transition-delay: 0.36s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(8) { transition-delay: 0.42s; }
+[data-reveal-stagger] > [data-reveal]:nth-child(n+9) { transition-delay: 0.48s; }
+
+/* ═══════════════════════════════════════════
+   HOVER EFFECTS
+   ═══════════════════════════════════════════ */
+.hover-underline {
+  position: relative;
+}
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hover-underline:hover::after {
+  width: 100%;
+}
+
+.hover-slide-right {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+              opacity 0.3s ease;
+}
+.hover-slide-right:hover {
+  transform: translateX(4px);
+}
+
+.hover-glow:hover {
+  text-shadow: 0 0 16px oklch(0.72 0.17 155 / 50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-underline::after,
+  .hover-slide-right {
+    transition: none;
+  }
+  .hover-slide-right:hover {
+    transform: none;
+  }
+  .hover-glow:hover {
+    text-shadow: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
+@keyframes pulse-eco {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes line-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-pulse-eco {
+  animation: pulse-eco 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+.animate-line-scan {
+  animation: line-scan 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-eco,
+  .animate-shimmer,
+  .animate-line-scan {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   BROKEN-LINE DECORATIONS — VLM/Design System accent
+   ═══════════════════════════════════════════ */
+.broken-line-border {
+  border: 1px dashed oklch(0.72 0.17 155 / 15%);
+}
+
+.broken-line-left {
+  border-left: 2px dashed oklch(0.72 0.17 155 / 30%);
+  padding-left: 1rem;
+}
+
+.broken-line-bottom {
+  border-bottom: 1px dashed oklch(1.0 0 0 / 10%);
+}
+
+.broken-line-top {
+  border-top: 1px dashed oklch(1.0 0 0 / 10%);
+}
+
+.broken-line-corner {
+  position: relative;
+}
+.broken-line-corner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  border-top: 2px solid oklch(0.72 0.17 155 / 40%);
+  border-left: 2px solid oklch(0.72 0.17 155 / 40%);
+  pointer-events: none;
+}
+.broken-line-corner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border-bottom: 2px solid oklch(0.72 0.17 155 / 40%);
+  border-right: 2px solid oklch(0.72 0.17 155 / 40%);
+  pointer-events: none;
+}
+
+/* Cross-hatch broken line pattern for design system sections */
+.broken-crosshatch {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      oklch(0.72 0.17 155 / 4%),
+      oklch(0.72 0.17 155 / 4%) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      oklch(0.72 0.17 155 / 4%),
+      oklch(0.72 0.17 155 / 4%) 1px,
+      transparent 1px,
+      transparent 12px
+    );
+}
+
+/* Scan line effect for VLM analysis */
+.scan-line-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.scan-line-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, oklch(0.72 0.17 155 / 60%), transparent);
+  animation: scan-line 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-line-overlay::after {
+    animation: none;
+  }
+}
+
+@keyframes scan-line {
+  0% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Prose overrides for dark theme (react-markdown) */
+.prose pre {
+  border: 1px solid oklch(1.0 0 0 / 8%);
+}
+.prose code::before,
+.prose code::after {
+  content: '';
+}
+
+/* ═══════════════════════════════════════════
+   GLOBAL — NO ROUNDED CORNERS
+   ═══════════════════════════════════════════ */
+*, *::before, *::after {
+  border-radius: 0 !important;
+}
+
+/* ═══ Bento Grid ═══ */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1023px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══ Bento Card ═══ */
+.bento-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bento-card:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(110, 231, 183, 0.03);
+}
+
+.bento-card-expanded {
+  grid-column: span 8;
+}
+
+@media (max-width: 1023px) {
+  .bento-card-expanded {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 767px) {
+  .bento-card-expanded {
+    grid-column: span 1;
   }
 }
