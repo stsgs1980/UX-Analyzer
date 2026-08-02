@@ -61,3 +61,26 @@ Stage Summary:
 - Code Preview: LLM-generated standalone HTML rendered in sandboxed iframe with fullscreen
 - 10 files changed, 810 insertions(+), 14 deletions(-)
 - Pushed to main: 75c675f
+---
+Task ID: 1
+Agent: main
+Task: Add few-shot examples from Pointer AI source blocks + test fixtures
+
+Work Log:
+- Read all 13 source-block files and pointer-ai-landing-page-analysis.md
+- Found existing fixture files (pointer-ai-nextjs-page.json, pointer-ai-analysis-result.json) and unit tests already in place
+- Created src/lib/few-shot-examples.ts with 3 production code patterns from Pointer AI:
+  1. Design Tokens via tailwind.config.ts (HSL CSS variables + shadcn/ui)
+  2. Interactive Client Component (PricingSection with useState toggle)
+  3. Section Composition (BentoSection with BentoCard wrapper + grid)
+- Integrated few-shot examples into reference-code-prompt.ts via import
+- Fixed 2 pre-existing test bugs (DESIGN.md truncation boundary, file structure assertion)
+- Added new test: "includes few-shot examples from Pointer AI"
+- Exported formatReferenceCode() and extractRscFromHtml() for unit testing
+- All 18 reference-code tests pass, build passes, pushed to main (f74ee02)
+
+Stage Summary:
+- Few-shot prompting: 3 real Pointer AI code patterns added to reference-code prompt
+- Test infrastructure: fixtures + unit tests for rsc-extract and reference-code steps
+- Build: passing, pushed to https://github.com/stsgs1980/UX-Analyzer.git (f74ee02)
+- 5 rsc-extract test failures are pre-existing (regex matching issues with HTML entities)
