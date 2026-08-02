@@ -104,3 +104,26 @@ Stage Summary:
 - 5 RSC extract bugs fixed in production code and tests
 - Discovered bun regex engine quirk with String.fromCharCode-constructed strings
 - Production RSC extraction is more robust for real-world HTML pages
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix 14 integration test failures — rewrite from vitest to bun:test
+
+Work Log:
+- Diagnosed root causes: Playwright file run by bun test (incompatible), vitest vi.mock/vi.fn not supported in bun test, mock leakage between test files
+- Created bunfig.toml for test configuration
+- Rewrote tests/integration/handlers.ts: replaced vi.fn() with mock() from bun:test
+- Rewrote tests/integration/analyze-route.test.ts: replaced vi.mock with mock.module, vi.mocked with direct mock references
+- Added mock for @/lib/gemini-provider (localProvider fallback)
+- Used --isolate flag to prevent mock.module leakage between test files
+- Used --path-ignore-patterns to exclude Playwright E2E from bun test
+- Updated package.json test scripts from vitest to bun test with proper flags
+- All 87 tests pass (10 integration + 77 unit), 0 failures, build passes
+- Pushed to main (4cfec37)
+
+Stage Summary:
+- Migration from vitest to bun:test for integration tests complete
+- 87/87 tests pass with bun run test (was 74/88 with failures)
+- Playwright E2E tests run via separate `bun run test:e2e` command
+- --isolate prevents mock leakage between test files
