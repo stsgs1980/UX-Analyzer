@@ -160,7 +160,7 @@ export interface AnalysisResult {
   } | null;
   designMd?: string | null;
   extractedImageUrl?: string | null;
-  sourceType?: string | null;
+  sourceType?: 'url' | 'pinterest' | 'upload' | null;
   pinterestData?: {
     title: string;
     authorName: string;
@@ -222,8 +222,6 @@ interface AnalysisStore {
   referenceCodeContent: string | null;
   codePreviewHtml: string | null;
   rscPayloadContent: Record<string, unknown> | null;
-  generatedProjectContent: { files: Record<string, string>; projectName: string; installCommand: string } | null;
-  _pollController: AbortController | null;
 
   // History
   history: HistoryItem[];
@@ -242,8 +240,10 @@ interface AnalysisStore {
   setReferenceCode: (code: string) => void;
   setCodePreviewHtml: (html: string) => void;
   setRscPayloadContent: (payload: Record<string, unknown>) => void;
-  setGeneratedProjectContent: (project: { files: Record<string, string>; projectName: string; installCommand: string }) => void;
 }
+
+/** Polling interval ref — allows cleanup */
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   // Input
@@ -271,12 +271,10 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   addUrl: (url: string) => {
     const trimmed = url.trim();
     if (!trimmed) return;
-    // Add protocol if missing
     let finalUrl = trimmed;
     if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
       finalUrl = "https://" + trimmed;
     }
-    // Check for duplicates
     if (get().urls.includes(finalUrl)) return;
     if (get().urls.length >= 10) return;
     set({ urls: [...get().urls, finalUrl], inputUrl: "" });
@@ -296,7 +294,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   referenceCodeContent: null,
   codePreviewHtml: null,
   rscPayloadContent: null,
-  generatedProjectContent: null,
   error: null,
 
   // History
@@ -334,7 +331,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   deleteHistoryItem: async (id: string) => {
     try {
       await fetch(`/api/analyses?id=${id}`, { method: "DELETE" });
-      // If the deleted item is currently displayed, clear it
       const { currentAnalysisId, result } = get();
       if (currentAnalysisId === id && result) {
         set({ result: null, currentAnalysisId: null });
@@ -372,12 +368,10 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       if (!res.ok) return;
       const data = await res.json();
       const urls: string[] = typeof data.urls === "string" ? JSON.parse(data.urls) : data.urls || [];
-      // Only URL-based analyses can be re-run (image uploads have no refetchable source)
       if (urls.length === 0) {
         toast.error("Переанализ возможен только для URL-запросов, не для загруженных изображений");
         return;
       }
-      // Populate URLs and clear previous state
       set({
         urls,
         inputUrl: "",
@@ -387,22 +381,16 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         imageBase64: null,
         imageFileName: null,
       });
-      // Start analysis with forceRerun to bypass dedup cache
       await get().startAnalysis(true);
     } catch (err) {
       console.error("Failed to rerun analysis:", err);
     }
   },
 
-  // Polling abort controller (for cleanup on unmount)
-  _pollController: null as AbortController | null,
-
-  // Start analysis (POST returns immediately, polling for progress)
+  // Start analysis — POST to start, then POLL for progress
   startAnalysis: async (forceRerun?: boolean) => {
-    const { urls, imageBase64, imageFileName } = get();
+    const { urls, imageBase64, imageFileName, generateReferenceCode, extractRscPayload } = get();
     if (urls.length === 0 && !imageBase64) return;
-
-    // M3: Prevent double-submission race condition
     if (get().isAnalyzing) return;
 
     set({
@@ -415,10 +403,18 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     clearPersistedResult();
 
     try {
+      // 1. Start analysis — returns immediately with { analysisId }
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urls, imageBase64: imageBase64 || undefined, imageFileName: imageFileName || undefined, generateReferenceCode: get().generateReferenceCode || undefined, extractRscPayload: get().extractRscPayload || undefined, forceRerun: forceRerun || undefined }),
+        body: JSON.stringify({
+          urls,
+          imageBase64: imageBase64 || undefined,
+          imageFileName: imageFileName || undefined,
+          generateReferenceCode: generateReferenceCode || undefined,
+          extractRscPayload: extractRscPayload || undefined,
+          forceRerun: forceRerun || undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -433,85 +429,11 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         return;
       }
 
-      // Response is JSON with { analysisId, status } — no long-lived connection
-      const { analysisId } = await response.json() as { analysisId: string; status: string };
+      const { analysisId } = await response.json() as { analysisId: string };
       set({ currentAnalysisId: analysisId });
 
-      // Start polling for progress
-      const controller = new AbortController();
-      set({ _pollController: controller });
-
-      const pollInterval = setInterval(async () => {
-        if (controller.signal.aborted) {
-          clearInterval(pollInterval);
-          return;
-        }
-
-        try {
-          const pollRes = await fetch(`/api/analyze/progress/${analysisId}`, {
-            signal: controller.signal,
-          });
-          if (!pollRes.ok) {
-            clearInterval(pollInterval);
-            return;
-          }
-
-          const poll = await pollRes.json() as {
-            status: string;
-            progress: number;
-            step: string;
-            message: string;
-            result?: Record<string, unknown> | null;
-            designMd?: string | null;
-            referenceCode?: string | null;
-            codePreviewHtml?: string | null;
-            rscPayload?: Record<string, unknown> | null;
-            generatedProject?: { files: Record<string, string>; projectName: string; installCommand: string } | null;
-            error?: string | null;
-          };
-
-          // Update progress display
-          set({
-            progress: {
-              step: poll.step,
-              message: poll.message,
-              progress: poll.progress,
-            },
-          });
-
-          if (poll.status === "completed" && poll.result) {
-            clearInterval(pollInterval);
-            const newResult = poll.result as AnalysisResult;
-            const newDesignMd = poll.designMd || null;
-            set({
-              isAnalyzing: false,
-              result: newResult,
-              designMdContent: newDesignMd,
-              referenceCodeContent: poll.referenceCode || null,
-              codePreviewHtml: poll.codePreviewHtml || null,
-              rscPayloadContent: poll.rscPayload || null,
-              generatedProjectContent: poll.generatedProject || null,
-            });
-            persistResult(newResult, analysisId, newDesignMd);
-            get().loadHistory();
-          } else if (poll.status === "error") {
-            clearInterval(pollInterval);
-            set({ isAnalyzing: false, error: poll.error || "Ошибка анализа" });
-            get().loadHistory();
-          }
-        } catch (err) {
-          // Network error on poll — ignore, next poll will retry
-          console.warn("[poll] failed:", err);
-        }
-      }, 2000);
-
-      // Safety timeout: 5 minutes max
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (get().isAnalyzing) {
-          set({ isAnalyzing: false, error: "Таймаут анализа (5 минут)" });
-        }
-      }, 5 * 60 * 1000);
+      // 2. Start polling
+      startPolling(analysisId, set, get);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
       set({ isAnalyzing: false, error: msg });
@@ -519,6 +441,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   },
 
   reset: () => {
+    stopPolling();
     clearPersistedResult();
     set({
       isAnalyzing: false,
@@ -548,7 +471,121 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   setRscPayloadContent: (payload: Record<string, unknown>) => {
     set({ rscPayloadContent: payload });
   },
-  setGeneratedProjectContent: (project: { files: Record<string, string>; projectName: string; installCommand: string }) => {
-    set({ generatedProjectContent: project });
-  },
 }));
+
+// ════════════════════════════════════════════════════════
+//  Polling logic
+// ════════════════════════════════════════════════════════
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+function startPolling(
+  analysisId: string,
+  set: (partial: Partial<AnalysisStore> | ((state: AnalysisStore) => Partial<AnalysisStore>)) => void,
+  get: () => AnalysisStore
+) {
+  stopPolling();
+
+  const POLL_INTERVAL = 2000; // 2 seconds
+  let consecutiveErrors = 0;
+
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/analyze/progress/${analysisId}`);
+
+      if (!res.ok) {
+        consecutiveErrors++;
+        if (consecutiveErrors >= 3) {
+          stopPolling();
+          set({ isAnalyzing: false, error: "Не удалось получить статус анализа" });
+        }
+        return;
+      }
+
+      consecutiveErrors = 0;
+      const data = await res.json() as {
+        step: string;
+        message: string;
+        progress: number;
+        status: "running" | "completed" | "error";
+        result?: Record<string, unknown> | null;
+        error?: string | null;
+        designMd?: string | null;
+        referenceCode?: string | null;
+        codePreviewHtml?: string | null;
+        rscPayload?: Record<string, unknown> | null;
+      };
+
+      // Update progress bar
+      if (data.status === "running") {
+        set({
+          progress: {
+            step: data.step,
+            message: data.message,
+            progress: data.progress,
+          },
+        });
+      }
+
+      // Handle design_md / reference_code / code_preview as they arrive
+      if (data.designMd) {
+        set({
+          designMdContent: data.designMd,
+          result: get().result ? { ...get().result!, designMd: data.designMd } : get().result,
+        });
+      }
+      if (data.referenceCode) {
+        set({
+          referenceCodeContent: data.referenceCode,
+          result: get().result ? { ...get().result!, referenceCode: data.referenceCode } : get().result,
+        });
+      }
+      if (data.codePreviewHtml) {
+        set({ codePreviewHtml: data.codePreviewHtml });
+      }
+      if (data.rscPayload) {
+        set({
+          rscPayloadContent: data.rscPayload,
+          result: get().result ? { ...get().result!, rscPayload: data.rscPayload } : get().result,
+        });
+      }
+
+      // Completed
+      if (data.status === "completed" && data.result) {
+        stopPolling();
+        const newResult = data.result as AnalysisResult;
+        const newDesignMd = (data.designMd as string) || (newResult?.designMd as string) || null;
+        set({
+          isAnalyzing: false,
+          result: newResult,
+          progress: { step: "done", message: "Анализ завершён!", progress: 1 },
+          designMdContent: newDesignMd,
+        });
+        persistResult(newResult, analysisId, newDesignMd);
+        get().loadHistory();
+      }
+
+      // Error
+      if (data.status === "error") {
+        stopPolling();
+        set({
+          isAnalyzing: false,
+          error: data.error || data.message || "Ошибка анализа",
+        });
+        get().loadHistory();
+      }
+    } catch (err) {
+      consecutiveErrors++;
+      if (consecutiveErrors >= 3) {
+        stopPolling();
+        const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
+        set({ isAnalyzing: false, error: msg });
+      }
+    }
+  }, POLL_INTERVAL);
+}

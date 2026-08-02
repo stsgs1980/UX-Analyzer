@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useAnalysisStore } from "@/store/analysis-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ export function ReferenceCodeTab() {
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const iframeSrcDoc = codePreviewHtml || "";
+
   if (!referenceCodeContent && !codePreviewHtml) {
     return (
       <div className="text-sm text-muted-foreground py-4">
@@ -21,9 +23,6 @@ export function ReferenceCodeTab() {
       </div>
     );
   }
-
-  // Build srcdoc for iframe from HTML content
-  const iframeSrcDoc = useMemo(() => codePreviewHtml || "", [codePreviewHtml]);
 
   const handleDownloadHtml = () => {
     if (!codePreviewHtml) return;
