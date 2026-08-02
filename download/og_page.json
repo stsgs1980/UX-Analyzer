@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html style=\"height: 100%;\"><head><meta name=\"viewport\" content=\"width=device-width, minimum-scale=0.1\"><title>loumxDWGB2j</title></head><body style=\"margin: 0px; height: 100%; background-color: rgb(14, 14, 14);\"><p>A screenshot of a page from owncloud</p></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "loumxDWGB2j",
+    "url": "https://v0.app/chat/api/og/loumxDWGB2j",
+    "usage": {
+      "tokens": 88
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 88
+    }
+  },
+  "status": 200
+}

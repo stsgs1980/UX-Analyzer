@@ -1,0 +1,23 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "external": {},
+    "html": "<html><head></head><body></body></html>",
+    "httpStatus": 103,
+    "httpStatusText": "Early Hints",
+    "metadata": {},
+    "title": "",
+    "url": "https://v0.app/chat/loumxDWGB2j",
+    "usage": {
+      "tokens": 12
+    },
+    "warning": "Target URL returned error 103: Early Hints"
+  },
+  "meta": {
+    "usage": {
+      "tokens": 12
+    }
+  },
+  "status": 200
+}
