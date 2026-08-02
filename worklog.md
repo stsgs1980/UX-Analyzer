@@ -150,3 +150,31 @@ Stage Summary:
 - Re-run from history now works: bypasses dedup cache via forceRerun=true
 - Image upload analyses correctly show disabled re-run
 - Both /history page and in-page sidebar have Re-run buttons
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Source adapter refactoring — replace 53 if/else with adapter pattern
+
+Work Log:
+- Read all 15 files with source-type conditionals (route.ts, fetch-source.ts, fetch-pages.ts, screenshot.ts, vlm-analysis.ts, llm-analysis.ts, design-md.ts, reference-code.ts, analysis-prompt.ts, pinterest.ts, types.ts, analysis-store.ts, analysis-history.tsx, analysis-results.tsx, history/page.tsx)
+- Created design spec (docs/superpowers/specs/2026-08-03-source-adapters-design.md)
+- Created source-adapters/types.ts: SourceAdapter interface with capability flags
+- Created source-adapters/registry.ts: URL pattern matching for 8 types
+- Created pipeline/pipeline-builder.ts: dynamic pipeline from adapter capabilities
+- Implemented 8 adapters: ImageAdapter, PinterestAdapter, PinterestBoardAdapter, UrlAdapter, DribbbleAdapter, BehanceAdapter, CodePenAdapter, GitHubAdapter
+- Rewrote fetch-source.ts: unified adapter.fetch() call
+- Rewrote route.ts: resolveAdapter() replaces 16 if/else branches
+- Updated all pipeline steps: adapter.canFetchHtml instead of pinterestSource/hasImageUpload
+- Updated PipelineContext: added adapter, metadata, sourceCode, sourceDescription
+- Updated analysis-store.ts: widened sourceType to string
+- Created 65 new unit tests: registry (32), adapters (24), pipeline-builder (9)
+- Build passes, all 175 tests pass (0 failures)
+- Pushed to origin/source-adapters branch
+
+Stage Summary:
+- 53 if/else source-type conditionals replaced with 8 self-contained adapters
+- Capability-based pipeline: canFetchHtml, canExtractRsc, hasMultiplePages, hasSourceCode
+- 4 new source types: Dribbble, Behance, CodePen, GitHub (+ PinterestBoard for multi-pin)
+- 26 files changed, 2112 insertions, 103 deletions
+- PR ready at: https://github.com/stsgs1980/UX-Analyzer/pull/new/source-adapters
