@@ -1,9 +1,9 @@
 import type { Node, Edge } from "@xyflow/react";
+import type { AnalysisResult } from "@/store/analysis-store";
 
 /* ─────────────────────────────────────────────
-   Mock Design Decomposition Data
-   Represents a typical UX Analyzer output:
-   component tree + cross-dependency edges
+   Design Decomposition Data
+   Can build from real AnalysisResult or fall back to mock data
    ───────────────────────────────────────────── */
 
 export type NodeCategory =
@@ -19,6 +19,324 @@ export interface DesignNodeData extends Record<string, unknown> {
   description: string;
   tags: string[];
   complexity: 1 | 2 | 3; // visual weight: 1=leaf, 2=branch, 3=root
+}
+
+/* ─────────────────────────────────────────────
+   Build graph from real AnalysisResult data
+   ───────────────────────────────────────────── */
+export function buildGraphFromAnalysis(result: AnalysisResult): {
+  nodes: Node<DesignNodeData>[];
+  edges: Edge[];
+} {
+  const nodes: Node<DesignNodeData>[] = [];
+  const edges: Edge[] = [];
+
+  // Track IDs for cross-dependency edges
+  const nodeIdsByCategory: Record<NodeCategory, string[]> = {
+    layout: [],
+    component: [],
+    pattern: [],
+    style: [],
+    interaction: [],
+  };
+
+  let yOffset = 0;
+  const LAYER_GAP = 200;
+  const NODE_GAP = 280;
+  const startX = 300;
+
+  // Helper to create a node
+  function addNode(
+    id: string,
+    label: string,
+    category: NodeCategory,
+    description: string,
+    tags: string[],
+    complexity: 1 | 2 | 3,
+    col: number
+  ) {
+    nodes.push({
+      id,
+      type: complexity === 3 ? "designRoot" : "designNode",
+      position: { x: startX + col * NODE_GAP, y: yOffset },
+      data: { label, category, description, tags, complexity },
+    });
+    nodeIdsByCategory[category].push(id);
+  }
+
+  // ─── Layer 1: Root ───
+  const rootLabel = result.teardown?.title || "Design System";
+  addNode("root", rootLabel, "layout", "Root — full product decomposition", ["system", "root"], 3, 2);
+  yOffset += LAYER_GAP;
+
+  // ─── Layer 2: Deconstruction layers → Layout category ───
+  const deconLayers = result.deconstruction?.layers || [];
+  if (deconLayers.length > 0) {
+    deconLayers.forEach((layer, i) => {
+      const id = `layer-${i}`;
+      addNode(
+        id,
+        layer.name,
+        "layout",
+        layer.analysis.length > 120 ? layer.analysis.slice(0, 120) + "..." : layer.analysis,
+        ["layer", `depth-${i + 1}`],
+        2,
+        i
+      );
+      edges.push({
+        id: `e-root-${id}`,
+        source: "root",
+        target: id,
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+      });
+    });
+    yOffset += LAYER_GAP;
+  } else {
+    // Fallback generic layout nodes
+    const layoutItems = ["Hero Section", "Navigation", "Content Grid", "Footer"];
+    layoutItems.forEach((label, i) => {
+      const id = `layout-${i}`;
+      addNode(id, label, "layout", `Layout structure: ${label}`, ["layout", "structure"], 2, i);
+      edges.push({
+        id: `e-root-${id}`,
+        source: "root",
+        target: id,
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+      });
+    });
+    yOffset += LAYER_GAP;
+  }
+
+  // ─── Layer 3: Components from vlmAnalysis ───
+  const vlm = result.vlmAnalysis;
+  const components = vlm?.components || [];
+  const layoutInfo = vlm?.layout;
+
+  // Add layout info node
+  if (layoutInfo) {
+    const lid = "vlm-layout";
+    addNode(
+      lid,
+      "Layout System",
+      "component",
+      `Grid: ${layoutInfo.gridType}, Spacing: ${layoutInfo.spacing}, Align: ${layoutInfo.alignment}`,
+      [layoutInfo.gridType, layoutInfo.spacing, layoutInfo.density],
+      2,
+      0
+    );
+    // Connect to first layout layer
+    if (deconLayers.length > 0) {
+      edges.push({
+        id: `e-layer-0-${lid}`,
+        source: "layer-0",
+        target: lid,
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+      });
+    }
+  }
+
+  components.forEach((comp, i) => {
+    const col = layoutInfo ? i + 1 : i;
+    const id = `comp-${i}`;
+    addNode(
+      id,
+      comp.type,
+      "component",
+      comp.characteristics.length > 100
+        ? comp.characteristics.slice(0, 100) + "..."
+        : comp.characteristics,
+      [...comp.states, comp.borderRadius],
+      comp.states.length > 2 ? 2 : 1,
+      col
+    );
+    // Connect to nearest layout node
+    const parentIdx = Math.min(i, deconLayers.length - 1);
+    const parent = parentIdx >= 0 ? `layer-${parentIdx}` : "root";
+    edges.push({
+      id: `e-${parent}-${id}`,
+      source: parent,
+      target: id,
+      type: "smoothstep",
+      animated: false,
+      style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+    });
+  });
+  if (components.length > 0 || layoutInfo) yOffset += LAYER_GAP;
+
+  // ─── Layer 4: UI Patterns + Visual Effects → Pattern category ───
+  const uiPatterns = vlm?.uiPatterns || [];
+  const visEffects = vlm?.visualEffects || [];
+
+  uiPatterns.forEach((p, i) => {
+    const id = `pattern-${i}`;
+    addNode(
+      id,
+      p.pattern,
+      "pattern",
+      p.description.length > 100 ? p.description.slice(0, 100) + "..." : p.description,
+      ["ui-pattern"],
+      1,
+      i
+    );
+    // Connect to a component
+    const parentIdx = Math.min(i, components.length - 1);
+    if (parentIdx >= 0) {
+      edges.push({
+        id: `e-comp-${parentIdx}-${id}`,
+        source: `comp-${parentIdx}`,
+        target: id,
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+      });
+    }
+  });
+
+  visEffects.forEach((fx, i) => {
+    const id = `vfx-${i}`;
+    addNode(
+      id,
+      fx.type,
+      "pattern",
+      fx.description.length > 100 ? fx.description.slice(0, 100) + "..." : fx.description,
+      ["visual-effect"],
+      1,
+      uiPatterns.length + i
+    );
+  });
+  if (uiPatterns.length > 0 || visEffects.length > 0) yOffset += LAYER_GAP;
+
+  // ─── Layer 5: Style tokens → Style category ───
+  // Colors
+  if (vlm?.colorPalette?.dominantColors?.length) {
+    const cid = "style-colors";
+    addNode(
+      cid,
+      "Color Palette",
+      "style",
+      vlm.colorPalette.dominantColors
+        .slice(0, 5)
+        .map((c) => `${c.name} (${c.percentage}%)`)
+        .join(", "),
+      vlm.colorPalette.dominantColors.slice(0, 3).map((c) => c.hex),
+      2,
+      0
+    );
+    // Connect from patterns
+    if (uiPatterns.length > 0) {
+      edges.push({
+        id: `e-pattern-0-${cid}`,
+        source: "pattern-0",
+        target: cid,
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+      });
+    }
+  }
+
+  // Typography
+  if (vlm?.typography) {
+    const tid = "style-typo";
+    const typo = vlm.typography;
+    addNode(
+      tid,
+      "Typography",
+      "style",
+      `Headings: ${typo.headings?.style || "n/a"} ${typo.headings?.weight || ""} | Body: ${typo.body?.style || "n/a"} ${typo.body?.weight || ""}`,
+      [typo.headings?.style || "", typo.body?.style || ""].filter(Boolean),
+      2,
+      1
+    );
+  }
+
+  // Mood & tone
+  if (vlm?.moodAndTone?.keywords?.length) {
+    const mid = "style-mood";
+    addNode(
+      mid,
+      "Mood & Tone",
+      "style",
+      vlm.moodAndTone.description || vlm.moodAndTone.keywords.join(", "),
+      vlm.moodAndTone.keywords,
+      1,
+      2
+    );
+  }
+  if (vlm?.colorPalette || vlm?.typography || vlm?.moodAndTone) yOffset += LAYER_GAP;
+
+  // ─── Layer 6: Interactions from teardown ───
+  const interactions = result.teardown?.interactions || [];
+  interactions.forEach((intx, i) => {
+    const id = `intx-${i}`;
+    addNode(
+      id,
+      intx.length > 30 ? intx.slice(0, 30) + "..." : intx,
+      "interaction",
+      intx,
+      ["interaction"],
+      1,
+      i
+    );
+    // Connect from style nodes
+    if (vlm?.colorPalette?.dominantColors) {
+      edges.push({
+        id: `e-style-colors-${id}`,
+        source: "style-colors",
+        target: id,
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "oklch(0.72 0.17 155 / 25%)", strokeWidth: 1.5 },
+      });
+    }
+  });
+
+  // If nothing was generated, fall back to mock data
+  if (nodes.length <= 1) {
+    return { nodes: initialNodes, edges: initialEdges };
+  }
+
+  // Add cross-dependency edges (dashed, between nodes in different categories)
+  const crossEdges: Edge[] = [];
+  const allCatPairs: [NodeCategory, NodeCategory][] = [
+    ["component", "style"],
+    ["pattern", "style"],
+    ["component", "interaction"],
+  ];
+  for (const [catA, catB] of allCatPairs) {
+    for (const idA of nodeIdsByCategory[catA]) {
+      for (const idB of nodeIdsByCategory[catB]) {
+        // Only add if not already connected by a tree edge
+        const exists = edges.some(
+          (e) =>
+            (e.source === idA && e.target === idB) ||
+            (e.source === idB && e.target === idA)
+        );
+        if (!exists && Math.random() < 0.15) {
+          crossEdges.push({
+            id: `cross-${idA}-${idB}`,
+            source: idA,
+            target: idB,
+            type: "straight",
+            animated: true,
+            style: {
+              strokeDasharray: "6 4",
+              stroke: "oklch(0.75 0.12 75 / 30%)",
+              strokeWidth: 1,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  return { nodes, edges: [...edges, ...crossEdges] };
 }
 
 // Category color map (oklch, matching the app's dark theme)

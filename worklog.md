@@ -222,3 +222,50 @@ Stage Summary:
 - /demo/graph page is live at https://preview-chat-c6f0f6c6-810f-4b92-96ee-fa6da123ce5c.space-z.ai/demo/graph
 - Interactive features: drag nodes, zoom/pan, mini-map, category visibility toggles, click node for detail panel
 - Visual: dark OLED theme, OKLCH colors, broken-line borders, no rounded corners, 5 category colors
+---
+Task ID: 1
+Agent: main
+Task: Интегрировать Decomposition Graph во вкладку Анализ с реальными данными
+
+Work Log:
+- Изучил структуру analysis-results.tsx (bento-grid карточек, 680-877 строки)
+- DeconstructionTab находился на строке 240-278 с простым списком слоёв
+- decomposition-graph-tab.tsx уже существовал с mock data overlay
+- decomposition-data.ts содержал mock nodes/edges
+
+Stage Summary:
+- Структура: bento-grid карточки, каждая раскрывается по клику
+- DeconstructionTab — карточка "Deconstruction" в bento-grid
+- decomposition-graph-tab.tsx — готовый overlay + preview, но с mock данными
+---
+Task ID: 2
+Agent: main
+Task: Создать адаптер реальных данных pipeline → React Flow nodes/edges
+
+Work Log:
+- Добавил buildGraphFromAnalysis(result: AnalysisResult) в decomposition-data.ts
+- Функция строит 6 слоёв: Root, Deconstruction layers, Components (VLM), Patterns (UI patterns + visual effects), Style tokens (colors, typography, mood), Interactions
+- Каждый слой связан tree-edges сверху вниз
+- Cross-dependency edges (dashed) между component↔style, pattern↔style, component↔interaction
+- Fallback на mock данные если nodes.length <= 1
+
+Stage Summary:
+- Файл: decomposition-data.ts — добавлено ~320 строк buildGraphFromAnalysis
+- Импорт AnalysisResult из store
+---
+Task ID: 3
+Agent: main
+Task: Интегрировать DecompositionGraph как overlay в DeconstructionTab
+
+Work Log:
+- Обновил decomposition-graph-tab.tsx: DecompositionGraphOverlay и DecompositionGraphTab теперь принимают result: AnalysisResult
+- Граф строится через buildGraphFromAnalysis(result) вместо mock initialNodes
+- Добавлен ESC key handler, category counts в header
+- В analysis-results.tsx: импорт DecompositionGraphTab, замена DeconstructionTab
+- DeconstructionTab теперь имеет кнопку "Open Decomposition Graph" → переключает на <DecompositionGraphTab data={data} />
+
+Stage Summary:
+- 3 файла изменено: decomposition-data.ts, decomposition-graph-tab.tsx, analysis-results.tsx
+- Граф интегрирован в карточку Deconstruction в bento-grid результатов анализа
+- Reinit прошёл без ошибок компиляции
+

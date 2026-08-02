@@ -14,8 +14,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import {
-  initialNodes,
-  initialEdges,
+  buildGraphFromAnalysis,
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   type DesignNodeData,
@@ -26,20 +25,25 @@ import {
   DetailPanel,
   LegendBar,
 } from "./graph-components";
+import type { AnalysisResult } from "@/store/analysis-store";
 
 const nodeTypes = { designNode: DesignNode, designRoot: DesignRootNode };
 
 /**
  * Full-viewport Decomposition Graph overlay.
- * Used inside DecompositionGraphTab — opened via "Open Full View" button.
+ * Populated with REAL pipeline data from AnalysisResult.
  */
 export function DecompositionGraphOverlay({
   onClose,
+  result,
 }: {
   onClose: () => void;
+  result: AnalysisResult;
 }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const graphData = useMemo(() => buildGraphFromAnalysis(result), [result]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(graphData.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(graphData.edges);
   const [selectedNodeData, setSelectedNodeData] =
     useState<DesignNodeData | null>(null);
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
@@ -88,6 +92,41 @@ export function DecompositionGraphOverlay({
     }));
   }, [edges, nodes, hiddenCategories]);
 
+  // ESC key handler
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedNodeData) {
+          closeDetail();
+        } else {
+          onClose();
+        }
+      }
+    },
+    [selectedNodeData, closeDetail, onClose]
+  );
+
+  useMemo(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Count nodes per category for the header stats
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      layout: 0,
+      component: 0,
+      pattern: 0,
+      style: 0,
+      interaction: 0,
+    };
+    graphData.nodes.forEach((n) => {
+      const cat = (n.data as unknown as DesignNodeData).category;
+      if (cat in counts) counts[cat]++;
+    });
+    return counts;
+  }, [graphData.nodes]);
+
   return (
     <div
       style={{
@@ -121,6 +160,14 @@ export function DecompositionGraphOverlay({
           >
             Design Decomposition
           </span>
+          <span
+            style={{
+              fontSize: 10,
+              color: "oklch(0.4 0.01 160)",
+            }}
+          >
+            {graphData.nodes.length} nodes / {graphData.edges.length} edges
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {(
@@ -129,6 +176,7 @@ export function DecompositionGraphOverlay({
             >
           ).map((cat) => {
             const active = !hiddenCategories.has(cat);
+            const count = categoryCounts[cat] || 0;
             return (
               <button
                 key={cat}
@@ -168,7 +216,7 @@ export function DecompositionGraphOverlay({
                       : "rgba(255,255,255,0.3)",
                   }}
                 >
-                  {CATEGORY_LABELS[cat]}
+                  {CATEGORY_LABELS[cat]} ({count})
                 </span>
               </button>
             );
@@ -223,11 +271,32 @@ export function DecompositionGraphOverlay({
 }
 
 /**
- * Bento-card preview: shows a miniature static preview with "Open" button.
+ * Bento-card preview: shows stats from real data + "Open" button.
  * Clicking opens the full DecompositionGraphOverlay.
  */
-export function DecompositionGraphTab() {
+export function DecompositionGraphTab({
+  data,
+}: {
+  data: AnalysisResult;
+}) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Count nodes per category from real data
+  const stats = useMemo(() => {
+    const graphData = buildGraphFromAnalysis(data);
+    const counts: Record<string, number> = {
+      layout: 0,
+      component: 0,
+      pattern: 0,
+      style: 0,
+      interaction: 0,
+    };
+    graphData.nodes.forEach((n) => {
+      const d = n.data as unknown as DesignNodeData;
+      if (d.category in counts) counts[d.category]++;
+    });
+    return { total: graphData.nodes.length, edges: graphData.edges.length, counts };
+  }, [data]);
 
   return (
     <>
@@ -265,11 +334,7 @@ export function DecompositionGraphTab() {
                   {CATEGORY_LABELS[cat]}
                 </div>
                 <div style={{ fontSize: 11, color: "oklch(0.7 0.02 160)" }}>
-                  {cat === "layout" && "4 nodes"}
-                  {cat === "component" && "6 nodes"}
-                  {cat === "pattern" && "5 nodes"}
-                  {cat === "style" && "4 nodes"}
-                  {cat === "interaction" && "4 nodes"}
+                  {stats.counts[cat]} nodes
                 </div>
               </div>
             )
@@ -284,9 +349,9 @@ export function DecompositionGraphTab() {
             lineHeight: 1.5,
           }}
         >
-          Interactive node graph: 5 layers, 25 nodes, tree edges +
-          cross-dependencies. Click to explore full decomposition with
-          mini-map, filters, and detail panel.
+          Interactive decomposition graph built from analysis data:
+          {stats.total} nodes across 5 layers with {stats.edges} connections.
+          Click to explore with mini-map, category filters, and detail panel.
         </div>
 
         <button
@@ -311,7 +376,10 @@ export function DecompositionGraphTab() {
 
       {/* Full-screen overlay */}
       {isOpen && (
-        <DecompositionGraphOverlay onClose={() => setIsOpen(false)} />
+        <DecompositionGraphOverlay
+          onClose={() => setIsOpen(false)}
+          result={data}
+        />
       )}
     </>
   );

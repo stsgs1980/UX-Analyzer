@@ -38,6 +38,7 @@ import { DesignSystemTab } from "./design-system-tab";
 import { ReferenceCodeTab } from "./reference-code-tab";
 import { RscPayloadTab } from "./rsc-payload-tab";
 import { GeneratedProjectTab } from "./generated-project-tab";
+import { DecompositionGraphTab } from "./decomposition-graph-tab";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -239,30 +240,48 @@ function TeardownTab({ data }: { data: AnalysisResult }) {
 /* ─── DECONSTRUCTION TAB ─── */
 function DeconstructionTab({ data }: { data: AnalysisResult }) {
   const d = data.deconstruction;
-  if (!d?.layers) return <EmptyState message="Данные deconstruction недоступны" />;
+  const [showGraph, setShowGraph] = useState(false);
+
+  if (showGraph) {
+    return <DecompositionGraphTab data={data} />;
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <SectionLabel icon={Layers}>Смысловые слои продукта</SectionLabel>
-        <div className="space-y-4">
-          {d.layers.map((layer, i) => (
-            <div key={i} className="border-l-2 border-l-primary/40 pl-4 py-3">
-              <h4 className="text-base font-semibold flex items-center gap-2 mb-2">
-                <span className="text-primary text-xs font-bold">
-                  {i + 1}.
-                </span>
-                {layer.name}
-              </h4>
-              <p className="text-sm leading-relaxed whitespace-pre-line">
-                {layer.analysis}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Graph toggle button */}
+      <button
+        onClick={() => setShowGraph(true)}
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md text-xs font-semibold uppercase tracking-wider
+          bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/15 transition-colors cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="2"/><path d="M6 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="M18 18h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/><path d="m6 6 3.5 4.5a2 2 0 0 0 3 0L16 6"/></svg>
+        Open Decomposition Graph
+      </button>
 
-      {d.connections && (
+      {d?.layers ? (
+        <div>
+          <SectionLabel icon={Layers}>Смысловые слои продукта</SectionLabel>
+          <div className="space-y-4">
+            {d.layers.map((layer, i) => (
+              <div key={i} className="border-l-2 border-l-primary/40 pl-4 py-3">
+                <h4 className="text-base font-semibold flex items-center gap-2 mb-2">
+                  <span className="text-primary text-xs font-bold">
+                    {i + 1}.
+                  </span>
+                  {layer.name}
+                </h4>
+                <p className="text-sm leading-relaxed whitespace-pre-line">
+                  {layer.analysis}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <EmptyState message="Данные deconstruction недоступны" />
+      )}
+
+      {d?.connections && (
         <>
           <Separator />
           <div>
