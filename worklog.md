@@ -205,3 +205,20 @@ Stage Summary:
 - Pipeline: fetch-source → VLM → LLM → design-md → db-save all working
 - Known issue: design-md content not saved to DB (LLM returns empty for design-md prompt via localProvider fallback)
 - Known issue: some analyses stuck in "running" (LLM step slow or timed out)
+
+---
+Task ID: 1
+Agent: main
+Task: Create /demo/graph — interactive node graph visualization for design decomposition
+
+Work Log:
+- Installed @xyflow/react (React Flow v12) in UX-Analyzer project
+- Created src/app/demo/graph/decomposition-data.ts — mock design decomposition data with 25 nodes across 5 layers (layout, component, pattern, style, interaction) + tree edges + cross-dependency edges
+- Created src/app/demo/graph/graph-components.tsx — custom DesignRootNode, DesignNode (with category colors, complexity sizing, tags), DetailPanel (side panel on node click), LegendBar
+- Created src/app/demo/graph/page.tsx — full interactive graph page with ReactFlow, MiniMap, Controls, Background, category filter toggles, click-to-inspect detail panel
+- Started dev server, verified GET /demo/graph 200 (392ms first compile, 50ms cached)
+
+Stage Summary:
+- /demo/graph page is live at https://preview-chat-c6f0f6c6-810f-4b92-96ee-fa6da123ce5c.space-z.ai/demo/graph
+- Interactive features: drag nodes, zoom/pan, mini-map, category visibility toggles, click node for detail panel
+- Visual: dark OLED theme, OKLCH colors, broken-line borders, no rounded corners, 5 category colors
