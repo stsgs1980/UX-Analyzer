@@ -1,26 +1,33 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Pointer AI Landing Page Teardown Analysis - Complete pipeline
+Task: Refactor monolithic route.ts into modular pipeline architecture (Variant C)
 
 Work Log:
-- Attempted to access v0.app project URL (loumxDWGB2j) - page requires authentication, shows login form
-- Used web-reader to extract page HTML and metadata from v0.app
-- Used agent-browser to navigate and take screenshots of the template gallery page
-- Used VLM to analyze OG image (contained only chat UI, not the landing page itself)
-- Performed web search to find template details on v0.app/templates and community.vercel.com
-- Successfully retrieved template description: Hero, Features, Pricing, Testimonials, CTA, Footer sections
-- Found template metadata: 20.3K views, 1.9K interactions, by yadwinder, published July 30, 2025
-- Loaded PDF skill with all referenced files (report.md, fonts.md, cover.md, palette system)
-- Generated cascade palette for the document design
-- Wrote comprehensive ReportLab Python script (1100+ lines) covering all 8 analysis dimensions
-- Fixed font compatibility issues (variable font -> static fonts)
-- Fixed layout overflow issues (Spacer on cover page)
-- Successfully generated 19-page PDF document
-- Passed all pdf_qa.py quality checks (12/12 passed)
+- Cloned UX-Analyzer repo from GitHub (already existed from previous session)
+- Read and analyzed the monolithic `src/app/api/analyze/route.ts` (600 lines)
+- Read all 11 dependency files (analysis-prompt, vlm-prompt, design-md-prompt, extract-json, gemini-provider, tech-fingerprints, screenshot, pinterest, db, url-safety, rate-limit, analysis-store)
+- Created `src/lib/pipeline/types.ts` — PipelineContext, PipelineStep, PageContent, SearchResult interfaces
+- Created `src/lib/pipeline/runner.ts` — runPipeline() sequential executor with onSuccess/onError/onFinally hooks
+- Created `src/lib/pipeline/helpers.ts` — withTimeout(), llmWithFallback(), dbSafe() (extracted from route.ts)
+- Created 7 step files in `src/lib/pipeline/steps/`:
+  - fetch-source.ts (Pinterest oEmbed, uploaded images, direct image URLs)
+  - fetch-pages.ts (parallel page_reader + web_search + tech fingerprints)
+  - screenshot.ts (fallback screenshot capture)
+  - vlm-analysis.ts (vision model analysis)
+  - llm-analysis.ts (main AI analysis with heartbeat progress)
+  - design-md.ts (DESIGN.md generation)
+  - db-save.ts (database persistence)
+- Rewrote `src/app/api/analyze/route.ts` from 600 lines to ~170 lines (thin orchestrator)
+- Fixed turbopack.root config issue in next.config.ts
+- Fixed TypeScript type import order in types.ts
+- Fixed helpers.ts syntax error (comma vs semicolon in params)
+- Build: SUCCESS (all routes compile)
+- Tests: ALL 55 PASSED (6 test files, including 10 integration tests for analyze-route)
 
 Stage Summary:
-- Generated: /home/z/my-project/download/Pointer_AI_Landing_Page_Teardown_Analysis.pdf (19 pages, 142.6 KB)
-- All 20 tables with component specs, patterns, design system tokens
-- Complete 7-phase implementation pipeline for recreating the template
-- Document covers: Teardown, Deconstruction, Spec, Patterns, Reverse Engineering, Audit, Heuristics, Design System
+- Monolithic route.ts decomposed into modular pipeline: 3 infrastructure files + 7 step files
+- Full backward compatibility: build passes, all 55 tests pass
+- route.ts reduced from 600 → 170 lines (thin orchestration only)
+- New steps can be added by creating a file implementing PipelineStep and appending to the steps array
+- Pipeline is extensible: reference-code step can be added later as steps/reference-code.ts
