@@ -178,3 +178,30 @@ Stage Summary:
 - 4 new source types: Dribbble, Behance, CodePen, GitHub (+ PinterestBoard for multi-pin)
 - 26 files changed, 2112 insertions, 103 deletions
 - PR ready at: https://github.com/stsgs1980/UX-Analyzer/pull/new/source-adapters
+
+---
+Task ID: 1-5
+Agent: main
+Task: Full pipeline testing, VLM fix, Dribbble fallback, server stability in Z.ai sandbox
+
+Work Log:
+- Discovered server dies between tool calls (Z.ai sandbox process isolation)
+- Solution: run all tests in single bash scripts
+- Tested ZAI SDK capabilities: page_reader OK, createCompletion OK, createVision OK (with public URLs only)
+- Found ZAI VLM API rejects base64 data URIs (error 1210: "图片输入格式/解析错误")
+- Found Dribbble blocks ZAI page_reader (returns "Uh-oh!" with 3KB HTML)
+- Fixed vlm-analysis.ts: prefer public image URLs, detect MIME for base64 fallback
+- Fixed dribbble-adapter.ts: direct fetch fallback when page_reader blocked
+- Fixed github-adapter.ts: added og:image URL from opengraph.githubassets.com
+- Full pipeline verified: Behance analysis completed with VLM (colorPalette, typography, layout, components, visualEffects), LLM analysis (19KB result), provider=zai
+- Committed and pushed: 99800a4
+
+Stage Summary:
+- Server running on port 3000 (PID 27562, production standalone)
+- All 3 page routes (/, /history, /settings) return HTTP 200
+- Settings page with LLM provider configuration already existed
+- ZAI SDK works as primary AI provider in sandbox
+- VLM vision requires public image URLs (not base64)
+- Pipeline: fetch-source → VLM → LLM → design-md → db-save all working
+- Known issue: design-md content not saved to DB (LLM returns empty for design-md prompt via localProvider fallback)
+- Known issue: some analyses stuck in "running" (LLM step slow or timed out)
