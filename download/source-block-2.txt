@@ -1,0 +1,734 @@
+.aiCodeReviews {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.messageBox {
+  position: absolute;
+  border-radius: 8px; /* Adjusted for consistency with shadcn/ui radius */
+  overflow: hidden;
+  padding: 9.49px;
+  box-sizing: border-box;
+}
+
+.messageBoxBackground {
+  width: 316.28px;
+  height: 120px;
+  backdrop-filter: blur(16px); /* Updated blur value */
+  opacity: 0.6;
+  border: 0.79px solid hsl(var(--border));
+  background: linear-gradient(180deg, hsl(var(--card)) 0%, transparent 100%);
+  left: 50%;
+  top: 50%;
+  transform: translate(calc(-50% + 11.86px), calc(-50% - 7.3px)); /* Maintain relative offset for centering */
+}
+
+.messageBoxMain {
+  width: 340px;
+  height: 221.40px;
+  backdrop-filter: blur(16px); /* Updated blur value */
+  border: 1px solid hsl(var(--border));
+  background: linear-gradient(180deg, hsl(var(--card) / 0.9) 0%, hsl(var(--card) / 0.7) 100%);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); /* Center the main box */
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.codeBlock {
+  white-space: pre-wrap;
+  word-break: break-words;
+  font-size: 10.28px;
+  font-family: \"Geist Mono\", monospace;
+  line-height: 15.81px;
+  color: hsl(var(--foreground));
+  width: 100%;
+  flex-grow: 1;
+}
+
+.codeBlock p {
+  margin: 0;
+}
+
+.highlight {
+  position: absolute;
+  left: -8.64px;
+  width: 339.20px;
+}
+
+.highlightHeader {
+  height: 45.47px;
+  top: 80.79px;
+  background: hsl(var(--primary) / 0.1);
+}
+
+.highlightMain {
+  height: 33.12px;
+  top: 47.67px;
+  background: hsl(var(--accent) / 0.2);
+}
+
+.applyButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3.95px;
+  padding: 3.16px 6.33px;
+  border-radius: 5.53px;
+  box-shadow: 0px 0.7906976938247681px 2.3720932006835938px rgba(0, 0, 0, 0.1);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 10.28px;
+  line-height: 15.81px;
+  font-weight: 500;
+  margin-top: auto;
+  margin-left: auto;
+  cursor: pointer;
+  border: none;
+}
+
+.buttonText {
+  font-family: \"Geist\", sans-serif;
+}
+
+.buttonShortcut {
+  font-family: \"SF Pro\", sans-serif;
+}
+
+/* Theme specific styles for code block text color */
+.aiCodeReviews[data-theme=\"dark\"] .messageBoxBackground .codeBlock p {
+  color: hsl(var(--muted-foreground));
+}
+
+.aiCodeReviews[data-theme=\"dark\"] .messageBoxMain .codeBlock p {
+  color: hsl(var(--foreground));
+}
+
+/* Specific stroke color for the SVG path */
+.aiCodeReviews[data-theme=\"dark\"] .codeBlock svg path {
+  stroke: #22c55e;
+}
+1a:T5da,@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Themeable Colors - Restored to Original Vibe */
+    --background: 210 11% 7%; /* #0f1211 */
+    --foreground: 160 14% 93%; /* #e7eceb */
+
+    --muted: 240 2% 16%; /* #27272a */
+    --muted-foreground: 160 14% 93% / 0.7; /* rgba(231, 236, 235, 0.7) */
+    --muted-foreground-light: 160 14% 93% / 0.5; /* rgba(231, 236, 235, 0.5) */
+    --muted-foreground-dark: 160 14% 93% / 0.6; /* rgba(231, 236, 235, 0.6) */
+
+    --card: 220 17% 98% / 0.01;
+    --card-foreground: 160 14% 93%;
+
+    --popover: 210 11% 7%;
+    --popover-foreground: 160 14% 93%;
+
+    /* Primary Accent Colors */
+    --primary: 165 96% 71%; /* #78fcd6 */
+    --primary-foreground: 160 8% 6%; /* #0d0f0e */
+    --primary-dark: 160 100% 50%; /* #00ffb6 */
+    --primary-light: 160 48% 87%; /* New variable for lighter teal/green shades */
+
+    /* Secondary Accent Colors (for buttons, etc.) */
+    --secondary: 160 14% 93%; /* #e7eceb */
+    --secondary-foreground: 165 14% 8%; /* #141a18 */
+
+    --accent: 240 2% 25%; /* #3f3f42 */
+    --accent-foreground: 240 2% 96%; /* #f4f4f5 */
+
+    --border: 240 100% 100% / 0.08; /* rgba(255, 255, 255, 0.08) */
+    --border-light: 210 17% 6% / 0.1; /* rgba(16,24,40,0.1) */
+    --border-dark: 210 17% 6% / 0.05; /* rgba(16,24,40,0.05) */
+
+    --ring: 165 96% 71%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+1b:T116d,\"use client\"
+
+import { Twitter, Github, Linkedin } from \"lucide-react\"
+
+export function FooterSection() {
+  return (
+    <footer className=\"w-full max-w-[1320px] mx-auto px-5 flex flex-col md:flex-row justify-between items-start gap-8 md:gap-0 py-10 md:py-[70px]\">
+      {/* Left Section: Logo, Description, Social Links */}
+      <div className=\"flex flex-col justify-start items-start gap-8 p-4 md:p-8\">
+        <div className=\"flex gap-3 items-stretch justify-center\">
+          <div className=\"text-center text-foreground text-xl font-semibold leading-4\">Pointer</div>
+        </div>
+        <p className=\"text-foreground/90 text-sm font-medium leading-[18px] text-left\">Coding made effortless</p>
+        <div className=\"flex justify-start items-start gap-3\">
+          <a href=\"#\" aria-label=\"Twitter\" className=\"w-4 h-4 flex items-center justify-center\">
+            <Twitter className=\"w-full h-full text-muted-foreground\" />
+          </a>
+          <a href=\"#\" aria-label=\"GitHub\" className=\"w-4 h-4 flex items-center justify-center\">
+            <Github className=\"w-full h-full text-muted-foreground\" />
+          </a>
+          <a href=\"#\" aria-label=\"LinkedIn\" className=\"w-4 h-4 flex items-center justify-center\">
+            <Linkedin className=\"w-full h-full text-muted-foreground\" />
+          </a>
+        </div>
+      </div>
+      {/* Right Section: Product, Company, Resources */}
+      <div className=\"grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12 p-4 md:p-8 w-full md:w-auto\">
+        <div className=\"flex flex-col justify-start items-start gap-3\">
+          <h3 className=\"text-muted-foreground text-sm font-medium leading-5\">Product</h3>
+          <div className=\"flex flex-col justify-end items-start gap-2\">
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Features
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Pricing
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Integrations
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Real-time Previews
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Multi-Agent Coding
+            </a>
+          </div>
+        </div>
+        <div className=\"flex flex-col justify-start items-start gap-3\">
+          <h3 className=\"text-muted-foreground text-sm font-medium leading-5\">Company</h3>
+          <div className=\"flex flex-col justify-center items-start gap-2\">
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              About us
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Our team
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Careers
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Brand
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Contact
+            </a>
+          </div>
+        </div>
+        <div className=\"flex flex-col justify-start items-start gap-3\">
+          <h3 className=\"text-muted-foreground text-sm font-medium leading-5\">Resources</h3>
+          <div className=\"flex flex-col justify-center items-start gap-2\">
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Terms of use
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              API Reference
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Documentation
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Community
+            </a>
+            <a href=\"#\" className=\"text-foreground text-sm font-normal leading-5 hover:underline\">
+              Support
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+1c:T70b,import Image from \"next/image\"
+
+export function LargeTestimonial() {
+  return (
+    <section className=\"w-full px-5 overflow-hidden flex justify-center items-center\">
+      <div className=\"flex-1 flex flex-col justify-start items-start overflow-hidden\">
+        <div className=\"self-stretch px-4 py-12 md:px-6 md:py-16 lg:py-28 flex flex-col justify-start items-start gap-2\">
+          <div className=\"self-stretch flex justify-between items-center\">
+            <div className=\"flex-1 px-4 py-8 md:px-12 lg:px-20 md:py-8 lg:py-10 overflow-hidden rounded-lg flex flex-col justify-center items-center gap-6 md:gap-8 lg:gap-11\">
+              <div className=\"w-full max-w-[1024px] text-center text-foreground leading-7 md:leading-10 lg:leading-[64px] font-medium text-lg md:text-3xl lg:text-6xl\">
+                {
+                  \"Pointer's real-time previews cut our debugging time in half and made coding collaboratively actually enjoyable.\"
+                }
+              </div>
+              <div className=\"flex justify-start items-center gap-5\">
+                <Image
+                  src=\"/images/guillermo-rauch.png\"
+                  alt=\"Guillermo Rauch avatar\"
+                  width={48}
+                  height={48}
+                  className=\"w-12 h-12 relative rounded-full\"
+                  style={{ border: \"1px solid rgba(0, 0, 0, 0.08)\" }}
+                />
+                <div className=\"flex flex-col justify-start items-start\">
+                  <div className=\"text-foreground text-base font-medium leading-6\">Guillermo Rauch</div>
+                  <div className=\"text-muted-foreground text-sm font-normal leading-6\">{\"CEO, Vercel\"}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+1d:T248d,import type React from \"react\"
+
+const AiCodeReviews: React.FC = () => {
+  const themeVars = {
+    \"--ai-primary-color\": \"hsl(var(--primary))\",
+    \"--ai-background-color\": \"hsl(var(--background))\",
+    \"--ai-text-color\": \"hsl(var(--foreground))\",
+    \"--ai-text-dark\": \"hsl(var(--primary-foreground))\",
+    \"--ai-border-color\": \"hsl(var(--border))\",
+    \"--ai-border-main\": \"hsl(var(--foreground) / 0.1)\",
+    \"--ai-highlight-primary\": \"hsl(var(--primary) / 0.12)\",
+    \"--ai-highlight-header\": \"hsl(var(--accent) / 0.2)\",
+  }
+
+  return (
+    <div
+      style={
+        {
+          width: \"100%\",
+          height: \"100%\",
+          position: \"relative\",
+          background: \"transparent\",
+          ...themeVars,
+        } as React.CSSProperties
+      }
+      role=\"img\"
+      aria-label=\"AI Code Reviews interface showing code suggestions with apply buttons\"
+    >
+      {/* Background Message Box (Blurred) */}
+      <div
+        style={{
+          position: \"absolute\",
+          top: \"30px\",
+          left: \"50%\",
+          transform: \"translateX(-50%) scale(0.9)\",
+          width: \"340px\",
+          height: \"205.949px\",
+          background: \"linear-gradient(180deg, var(--ai-background-color) 0%, transparent 100%)\",
+          opacity: 0.6,
+          borderRadius: \"8.826px\",
+          border: \"0.791px solid var(--ai-border-color)\",
+          overflow: \"hidden\",
+          backdropFilter: \"blur(16px)\",
+        }}
+      >
+        <div
+          className=\"border rounded-lg bg-card\"
+          style={{
+            padding: \"7.355px 8.826px\",
+            height: \"100%\",
+            boxSizing: \"border-box\",
+            overflow: \"hidden\",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: \"'Geist Mono', 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace\",
+              fontSize: \"9.562px\",
+              lineHeight: \"14.711px\",
+              letterSpacing: \"-0.2942px\",
+              color: \"hsl(var(--muted-foreground))\",
+              width: \"100%\",
+              maxWidth: \"320px\",
+              margin: 0,
+            }}
+          >
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>switch (type) {\"{\"}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> case 'success':</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> return {\"{\"}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {\"          border: theme === 'dark' ? 'border-[rgba(34,197,94,0.4)]' : 'border-green-200',\"}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> icon: (</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'            <svg className={\\'baseIconClasses\\'} fill=\"none\" viewBox=\"0 0 14 14\">'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> &lt;path</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                d=\"M3.85156 7.875L6.47656 10.5L10.8516 3.5\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                stroke=\"var(--ai-primary-color)\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                strokeLinecap=\"round\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                strokeLinejoin=\"round\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>{'                strokeWidth=\"1.5\"'}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> /&gt;</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> &lt;/svg&gt;</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Foreground Message Box (Main) */}
+      <div
+        style={{
+          position: \"absolute\",
+          top: \"51.336px\",
+          left: \"50%\",
+          transform: \"translateX(-50%)\",
+          width: \"340px\",
+          height: \"221.395px\",
+          background: \"var(--ai-background-color)\",
+          backdropFilter: \"blur(16px)\",
+          borderRadius: \"9.488px\",
+          border: \"1px solid var(--ai-border-main)\",
+          overflow: \"hidden\",
+        }}
+      >
+        <div
+          className=\"bg-card border border-border\"
+          style={{
+            padding: \"9.488px\",
+            height: \"100%\",
+            boxSizing: \"border-box\",
+            position: \"relative\",
+            overflow: \"hidden\",
+          }}
+        >
+          <div
+            style={{
+              position: \"absolute\",
+              left: 0,
+              right: 0,
+              width: \"100%\",
+              top: \"47.67px\",
+              height: \"33.118px\",
+              background: \"hsl(var(--foreground) / 0.08)\",
+              zIndex: 1,
+            }}
+          />
+          <div
+            style={{
+              position: \"absolute\",
+              left: 0,
+              right: 0,
+              width: \"100%\",
+              top: \"80.791px\",
+              height: \"45.465px\",
+              background: \"var(--ai-highlight-primary)\",
+              zIndex: 1,
+            }}
+          />
+          <div
+            style={{
+              fontFamily: \"'Geist Mono', 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace\",
+              fontSize: \"10.279px\",
+              lineHeight: \"15.814px\",
+              letterSpacing: \"-0.3163px\",
+              color: \"var(--ai-text-color)\",
+              width: \"100%\",
+              maxWidth: \"320px\",
+              position: \"relative\",
+              zIndex: 2,
+              margin: 0,
+            }}
+          >
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>switch (type) {\"{\"}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> case 'success':</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> return {\"{\"}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {\"          border: theme === 'dark' ? 'border-[rgba(34,197,94,0.4)]' : 'border-green-200',\"}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> icon: (</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'            <svg className={\\'baseIconClasses\\'} fill=\"none\" viewBox=\"0 0 14 14\">'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> &lt;path</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                d=\"M3.85156 7.875L6.47656 10.5L10.8516 3.5\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>{'                stroke=\"#22C55E\"'}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                strokeLinecap=\"round\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>
+              {'                strokeLinejoin=\"round\"'}
+            </p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}>{'                strokeWidth=\"1.5\"'}</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> /&gt;</p>
+            <p style={{ margin: 0, whiteSpace: \"pre-wrap\", fontWeight: 400 }}> &lt;/svg&gt;</p>
+          </div>
+          <button
+            style={{
+              position: \"absolute\",
+              top: \"calc(50% + 29.745px)\",
+              right: \"20px\",
+              transform: \"translateY(-50%)\",
+              zIndex: 3,
+              display: \"flex\",
+              alignItems: \"center\",
+              justifyContent: \"center\",
+              gap: \"3.953px\",
+              background: \"var(--ai-primary-color)\",
+              color: \"var(--ai-text-dark)\",
+              border: \"none\",
+              cursor: \"pointer\",
+              fontWeight: 500,
+              whiteSpace: \"nowrap\",
+              transition: \"all 0.2s ease\",
+              padding: \"3.163px 6.326px\",
+              borderRadius: \"5.535px\",
+              fontSize: \"10.279px\",
+              lineHeight: \"15.814px\",
+              letterSpacing: \"-0.3163px\",
+              boxShadow:
+                \"0px 26.093px 7.116px rgba(0, 0, 0, 0), 0px 16.605px 6.326px rgba(0, 0, 0, 0.01), 0px 9.488px 5.535px rgba(0, 0, 0, 0.05), 0px 3.953px 3.953px rgba(0, 0, 0, 0.09), 0px 0.791px 2.372px rgba(0, 0, 0, 0.1)\",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: \"'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif\",
+                fontWeight: 500,
+              }}
+            >
+              Apply changes
+            </span>
+            <span
+              style={{
+                fontFamily: \"'SF Pro', -apple-system, BlinkMacSystemFont, system-ui, sans-serif\",
+                fontWeight: 500,
+              }}
+            >
+              ⌘Y
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default AiCodeReviews
+1e:T15ae,\"use client\"
+
+import type React from \"react\"
+import { useState } from \"react\"
+import { ChevronDown } from \"lucide-react\"
+
+const faqData = [
+  {
+    question: \"What is Pointer and who is it for?\",
+    answer:
+      \"Pointer is an AI-powered development platform designed for developers, teams, and organizations who want toaccelerate their coding workflow. It's perfect for both individual developers looking to enhance their productivity and teams seeking seamless collaboration tools.\",
+  },
+  {
+    question: \"How does Pointer's AI code review work?\",
+    answer:
+      \"Our AI analyzes your code in real-time, providing intelligent suggestions for improvements, catching potential bugs, and ensuring best practices. It learns from your coding patterns and adapts to your team's standards, making code reviews faster and more consistent.\",
+  },
+  {
+    question: \"Can I integrate Pointer with my existing tools?\",
+    answer:
+      \"Yes! Pointer offers one-click integrations with popular development tools including GitHub, GitLab, VS Code, Slack, and many more. Our MCP connectivity allows you to easily manage and configure server access across your entire development stack.\",
+  },
+  {
+    question: \"What's included in the free plan?\",
+    answer:
+      \"The free plan includes real-time code suggestions, basic integrations, single MCP server connection, up to 2 AI coding agents, and Vercel deployments with Pointer branding. It's perfect for individual developers getting started.\",
+  },
+  {
+    question: \"How do parallel coding agents work?\",
+    answer:
+      \"Our parallel coding agents can work on different parts of your codebase simultaneously, solving complex problems faster than traditional single-threaded approaches. You can launch multiple agents to handle different tasks like bug fixes, feature development, and code optimization concurrently.\",
+  },
+  {
+    question: \"Is my code secure with Pointer?\",
+    answer:
+      \"Absolutely. We use enterprise-grade security measures including end-to-end encryption, secure data transmission, and compliance with industry standards. Your code never leaves your secure environment without your explicit permission, and we offer on-premises deployment options for enterprise customers.\",
+  },
+]
+
+interface FAQItemProps {
+  question: string
+  answer: string
+  isOpen: boolean
+  onToggle: () => void
+}
+
+const FAQItem = ({ question, answer, isOpen, onToggle }: FAQItemProps) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    onToggle()
+  }
+  return (
+    <div
+      className={`w-full bg-[rgba(231,236,235,0.08)] shadow-[0px_2px_4px_rgba(0,0,0,0.16)] overflow-hidden rounded-[10px] outline outline-1 outline-border outline-offset-[-1px] transition-all duration-500 ease-out cursor-pointer`}
+      onClick={handleClick}
+    >
+      <div className=\"w-full px-5 py-[18px] pr-4 flex justify-between items-center gap-5 text-left transition-all duration-300 ease-out\">
+        <div className=\"flex-1 text-foreground text-base font-medium leading-6 break-words\">{question}</div>
+        <div className=\"flex justify-center items-center\">
+          <ChevronDown
+            className={`w-6 h-6 text-muted-foreground-dark transition-all duration-500 ease-out ${isOpen ? \"rotate-180 scale-110\" : \"rotate-0 scale-100\"}`}
+          />
+        </div>
+      </div>
+      <div
+        className={`overflow-hidden transition-all duration-500 ease-out ${isOpen ? \"max-h-[500px] opacity-100\" : \"max-h-0 opacity-0\"}`}
+        style={{
+          transitionProperty: \"max-height, opacity, padding\",
+          transitionTimingFunction: \"cubic-bezier(0.4, 0, 0.2, 1)\",
+        }}
+      >
+        <div
+          className={`px-5 transition-all duration-500 ease-out ${isOpen ? \"pb-[18px] pt-2 translate-y-0\" : \"pb-0 pt-0 -translate-y-2\"}`}
+        >
+          <div className=\"text-foreground/80 text-sm font-normal leading-6 break-words\">{answer}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function FAQSection() {
+  const [openItems, setOpenItems] = useState<Set<number>>(new Set())
+  const toggleItem = (index: number) => {
+    const newOpenItems = new Set(openItems)
+    if (newOpenItems.has(index)) {
+      newOpenItems.delete(index)
+    } else {
+      newOpenItems.add(index)
+    }
+    setOpenItems(newOpenItems)
+  }
+  return (
+    <section className=\"w-full pt-[66px] pb-20 md:pb-40 px-5 relative flex flex-col justify-center items-center\">
+      <div className=\"w-[300px] h-[500px] absolute top-[150px] left-1/2 -translate-x-1/2 origin-top-left rotate-[-33.39deg] bg-primary/10 blur-[100px] z-0\" />
+      <div className=\"self-stretch pt-8 pb-8 md:pt-14 md:pb-14 flex flex-col justify-center items-center gap-2 relative z-10\">
+        <div className=\"flex flex-col justify-start items-center gap-4\">
+          <h2 className=\"w-full max-w-[435px] text-center text-foreground text-4xl font-semibold leading-10 break-words\">
+            Frequently Asked Questions
+          </h2>
+          <p className=\"self-stretch text-center text-muted-foreground text-sm font-medium leading-[18.20px] break-words\">
+            Everything you need to know about Pointer and how it can transform your development workflow
+          </p>
+        </div>
+      </div>
+      <div className=\"w-full max-w-[600px] pt-0.5 pb-10 flex flex-col justify-start items-start gap-4 relative z-10\">
+        {faqData.map((faq, index) => (
+          <FAQItem key={index} {...faq} isOpen={openItems.has(index)} onToggle={() => toggleItem(index)} />
+        ))}
+      </div>
+    </section>
+  )
+}
+1f:Te2a,\"use client\"
+
+import type React from \"react\"
+
+import { Button } from \"@/components/ui/button\"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from \"@/components/ui/sheet\"
+import { Menu } from \"lucide-react\"
+import Link from \"next/link\" // Import Link for client-side navigation
+
+export function Header() {
+  const navItems = [
+    { name: \"Features\", href: \"#features-section\" },
+    { name: \"Pricing\", href: \"#pricing-section\" },
+    { name: \"Testimonials\", href: \"#testimonials-section\" }, // Changed from Docs to Testimonials
+  ]
+
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault()
+    const targetId = href.substring(1) // Remove '#' from href
+    const targetElement = document.getElementById(targetId)
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: \"smooth\" })
+    }
+  }
+
+  return (
+    <header className=\"w-full py-4 px-6\">
+      <div className=\"max-w-7xl mx-auto flex items-center justify-between\">
+        <div className=\"flex items-center gap-6\">
+          <div className=\"flex items-center gap-3\">
+            <span className=\"text-foreground text-xl font-semibold\">Pointer</span>
+          </div>
+          <nav className=\"hidden md:flex items-center gap-2\">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={(e) => handleScroll(e, item.href)} // Add onClick handler
+                className=\"text-[#888888] hover:text-foreground px-4 py-2 rounded-full font-medium transition-colors\"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className=\"flex items-center gap-4\">
+          <Link href=\"https://vercel.com/home\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"hidden md:block\">
+            <Button className=\"bg-secondary text-secondary-foreground hover:bg-secondary/90 px-6 py-2 rounded-full font-medium shadow-sm\">
+              Try for Free
+            </Button>
+          </Link>
+          <Sheet>
+            <SheetTrigger asChild className=\"md:hidden\">
+              <Button variant=\"ghost\" size=\"icon\" className=\"text-foreground\">
+                <Menu className=\"h-7 w-7\" />
+                <span className=\"sr-only\">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side=\"bottom\" className=\"bg-background border-t border-border text-foreground\">
+              <SheetHeader>
+                <SheetTitle className=\"text-left text-xl font-semibold text-foreground\">Navigation</SheetTitle>
+              </SheetHeader>
+              <nav className=\"flex flex-col gap-4 mt-6\">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={(e) => handleScroll(e, item.href)} // Add onClick handler
+                    className=\"text-[#888888] hover:text-foreground justify-start text-lg py-2\"
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <Link href=\"https://vercel.com/home\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"w-full mt-4\">
+                  <Button className=\"bg-secondary text-secondary-foreground hover:bg-secondary/90 px-6 py-2 rounded-full font-medium shadow-sm\">
+                    Try for Free
+                  </Button>
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
+  )
+}
