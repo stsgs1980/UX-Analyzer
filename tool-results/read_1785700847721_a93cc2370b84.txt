@@ -1,0 +1,866 @@
+     1→"use client";
+     2→
+     3→import { useState } from "react";
+     4→import { useAnalysisStore, type AnalysisResult } from "@/store/analysis-store";
+     5→import { Badge } from "@/components/ui/badge";
+     6→import { ScrollArea } from "@/components/ui/scroll-area";
+     7→import { Separator } from "@/components/ui/separator";
+     8→import { Button } from "@/components/ui/button";
+     9→import {
+    10→  Palette,
+    11→  Layers,
+    12→  FileText,
+    13→  GitCompare,
+    14→  Cpu,
+    15→  AlertTriangle,
+    16→  ClipboardCheck,
+    17→  Copy,
+    18→  Download,
+    19→  Lightbulb,
+    20→  Wrench,
+    21→  Eye,
+    22→  Sparkles,
+    23→  BarChart3,
+    24→  ArrowRight,
+    25→  User,
+    26→  Target,
+    27→  CheckSquare,
+    28→  ScanSearch,
+    29→  ChevronDown,
+    30→  ChevronUp,
+    31→  Server,
+    32→  FileDown,
+    33→} from "lucide-react";
+    34→import { buildMarkdownExport } from "@/lib/export-markdown";
+    35→import { getSourceTypeBadgeText } from "@/lib/source-type-icons";
+    36→import { DesignSystemTab } from "./design-system-tab";
+    37→import { ReferenceCodeTab } from "./reference-code-tab";
+    38→import { RscPayloadTab } from "./rsc-payload-tab";
+    39→import { toast } from "sonner";
+    40→import { motion, AnimatePresence } from "framer-motion";
+    41→
+    42→const CONFIDENCE_COLORS: Record<string, string> = {
+    43→  high: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    44→  medium: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    45→  low: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+    46→};
+    47→
+    48→const SEVERITY_COLORS: Record<string, string> = {
+    49→  critical: "bg-red-500/15 text-red-700 dark:text-red-400",
+    50→  major: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
+    51→  minor: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-600",
+    52→};
+    53→
+    54→function ConfidenceBadge({ confidence }: { confidence: string }) {
+    55→  return (
+    56→    <Badge variant="outline" className={CONFIDENCE_COLORS[confidence] || ""}>
+    57→      {confidence}
+    58→    </Badge>
+    59→  );
+    60→}
+    61→
+    62→function SeverityBadge({ severity }: { severity: string }) {
+    63→  return (
+    64→    <Badge variant="outline" className={SEVERITY_COLORS[severity] || ""}>
+    65→      {severity}
+    66→    </Badge>
+    67→  );
+    68→}
+    69→
+    70→export function SectionLabel({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
+    71→  return (
+    72→    <div className="flex items-center gap-2 mb-3">
+    73→      <Icon className="h-4 w-4 text-muted-foreground" />
+    74→      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+    75→        {children}
+    76→      </h3>
+    77→    </div>
+    78→  );
+    79→}
+    80→
+    81→function CopyButton({ text }: { text: string }) {
+    82→  const handleCopy = () => {
+    83→    navigator.clipboard.writeText(text);
+    84→    toast.success("JSON скопирован в буфер обмена");
+    85→  };
+    86→  return (
+    87→    <Button variant="outline" size="sm" onClick={handleCopy}>
+    88→      <Copy className="h-3.5 w-3.5 mr-1.5" />
+    89→      Копировать JSON
+    90→    </Button>
+    91→  );
+    92→}
+    93→
+    94→function ExportMarkdownButton({ result, designMd }: { result: AnalysisResult; designMd: string | null }) {
+    95→  const handleExport = () => {
+    96→    const md = buildMarkdownExport(result, designMd);
+    97→    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    98→    const url = URL.createObjectURL(blob);
+    99→    const a = document.createElement("a");
+   100→    a.href = url;
+   101→    const filename = result.teardown?.title
+   102→      ? `${result.teardown.title.replace(/[^a-zA-Z0-9а-яА-Я]/g, "-").toLowerCase()}.md`
+   103→      : `analysis-${Date.now()}.md`;
+   104→    a.download = filename;
+   105→    a.click();
+   106→    URL.revokeObjectURL(url);
+   107→    toast.success("Markdown отчёт скачан");
+   108→  };
+   109→  return (
+   110→    <Button variant="outline" size="sm" onClick={handleExport}>
+   111→      <FileDown className="h-3.5 w-3.5 mr-1.5" />
+   112→      Экспорт Markdown
+   113→    </Button>
+   114→  );
+   115→}
+   116→
+   117→function DownloadButton({ data }: { data: unknown }) {
+   118→  const handleDownload = () => {
+   119→    const blob = new Blob([JSON.stringify(data, null, 2)], {
+   120→      type: "application/json",
+   121→    });
+   122→    const url = URL.createObjectURL(blob);
+   123→    const a = document.createElement("a");
+   124→    a.href = url;
+   125→    a.download = `analysis-${Date.now()}.json`;
+   126→    a.click();
+   127→    URL.revokeObjectURL(url);
+   128→  };
+   129→  return (
+   130→    <Button variant="outline" size="sm" onClick={handleDownload}>
+   131→      <Download className="h-3.5 w-3.5 mr-1.5" />
+   132→      Скачать JSON
+   133→    </Button>
+   134→  );
+   135→}
+   136→
+   137→/* ─── TEARDOWN TAB ─── */
+   138→function TeardownTab({ data }: { data: AnalysisResult }) {
+   139→  const t = data.teardown;
+   140→  if (!t) return <EmptyState message="Данные teardown недоступны" />;
+   141→
+   142→  return (
+   143→    <div className="space-y-6">
+   144→      {/* Header */}
+   145→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+   146→        <div>
+   147→          <h2 className="text-xl font-bold">{t.title || "Без названия"}</h2>
+   148→          <div className="flex items-center gap-2 mt-1">
+   149→            {t.source && <Badge variant="secondary">{t.source}</Badge>}
+   150→            {t.type && <Badge variant="outline">{t.type}</Badge>}
+   151→            {t.author && (
+   152→              <span className="text-sm text-muted-foreground">by {t.author}</span>
+   153→            )}
+   154→          </div>
+   155→        </div>
+   156→      </div>
+   157→
+   158→      <Separator />
+   159→
+   160→      {/* Visual Style */}
+   161→      {t.visualStyle && (
+   162→        <div>
+   163→          <SectionLabel icon={Palette}>Визуальный стиль</SectionLabel>
+   164→          <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   165→            <p className="text-sm leading-relaxed whitespace-pre-line">
+   166→              {t.visualStyle}
+   167→            </p>
+   168→          </div>
+   169→        </div>
+   170→      )}
+   171→
+   172→      {/* Tech Stack */}
+   173→      {t.techStack && (
+   174→        <div>
+   175→          <SectionLabel icon={Cpu}>Технологический стек</SectionLabel>
+   176→          <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   177→            <p className="text-sm leading-relaxed whitespace-pre-line">
+   178→              {Array.isArray(t.techStack) ? t.techStack.join(", ") : t.techStack}
+   179→            </p>
+   180→          </div>
+   181→        </div>
+   182→      )}
+   183→
+   184→      {/* Features */}
+   185→      {t.features && t.features.length > 0 && (
+   186→        <div>
+   187→          <SectionLabel icon={Sparkles}>Ключевые фичи</SectionLabel>
+   188→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+   189→            {t.features.map((f, i) => (
+   190→              <div
+   191→                key={i}
+   192→                className="flex items-start gap-2 border-l border-l-white/10 pl-3 py-2"
+   193→              >
+   194→                <ArrowRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+   195→                <span className="text-sm">{f}</span>
+   196→              </div>
+   197→            ))}
+   198→          </div>
+   199→        </div>
+   200→      )}
+   201→
+   202→      {/* Interactions */}
+   203→      {t.interactions && t.interactions.length > 0 && (
+   204→        <div>
+   205→          <SectionLabel icon={Eye}>Взаимодействия и анимации</SectionLabel>
+   206→          <div className="flex flex-wrap gap-2">
+   207→            {t.interactions.map((item, i) => (
+   208→              <Badge key={i} variant="secondary" className="text-sm">
+   209→                {item}
+   210→              </Badge>
+   211→            ))}
+   212→          </div>
+   213→        </div>
+   214→      )}
+   215→
+   216→      {/* Inspiration — "What to steal" */}
+   217→      {t.inspiration && t.inspiration.length > 0 && (
+   218→        <div>
+   219→          <SectionLabel icon={Lightbulb}>Что стоит украсть</SectionLabel>
+   220→          <div className="space-y-2">
+   221→            {t.inspiration.map((item, i) => (
+   222→              <div
+   223→                key={i}
+   224→                className="flex items-start gap-3 border-l-2 border-l-primary/40 pl-4 py-2"
+   225→              >
+   226→                <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+   227→                <span className="text-sm font-medium">{item}</span>
+   228→              </div>
+   229→            ))}
+   230→          </div>
+   231→        </div>
+   232→      )}
+   233→    </div>
+   234→  );
+   235→}
+   236→
+   237→/* ─── DECONSTRUCTION TAB ─── */
+   238→function DeconstructionTab({ data }: { data: AnalysisResult }) {
+   239→  const d = data.deconstruction;
+   240→  if (!d?.layers) return <EmptyState message="Данные deconstruction недоступны" />;
+   241→
+   242→  return (
+   243→    <div className="space-y-6">
+   244→      <div>
+   245→        <SectionLabel icon={Layers}>Смысловые слои продукта</SectionLabel>
+   246→        <div className="space-y-4">
+   247→          {d.layers.map((layer, i) => (
+   248→            <div key={i} className="border-l-2 border-l-primary/40 pl-4 py-3">
+   249→              <h4 className="text-base font-semibold flex items-center gap-2 mb-2">
+   250→                <span className="text-primary text-xs font-bold">
+   251→                  {i + 1}.
+   252→                </span>
+   253→                {layer.name}
+   254→              </h4>
+   255→              <p className="text-sm leading-relaxed whitespace-pre-line">
+   256→                {layer.analysis}
+   257→              </p>
+   258→            </div>
+   259→          ))}
+   260→        </div>
+   261→      </div>
+   262→
+   263→      {d.connections && (
+   264→        <>
+   265→          <Separator />
+   266→          <div>
+   267→            <SectionLabel icon={ArrowRight}>Связи между слоями</SectionLabel>
+   268→            <div className="border-l-2 border-l-white/10 pl-4 py-3">
+   269→              <p className="text-sm leading-relaxed">{d.connections}</p>
+   270→            </div>
+   271→          </div>
+   272→        </>
+   273→      )}
+   274→    </div>
+   275→  );
+   276→}
+   277→
+   278→/* ─── SPEC TAB ─── */
+   279→function SpecTab({ data }: { data: AnalysisResult }) {
+   280→  const s = data.spec;
+   281→  if (!s) return <EmptyState message="Данные спецификации недоступны" />;
+   282→
+   283→  const hasFR = s.functionalRequirements && s.functionalRequirements.length > 0;
+   284→  const hasNFR = s.nonFunctionalRequirements && s.nonFunctionalRequirements.length > 0;
+   285→  const hasUS = s.userStories && s.userStories.length > 0;
+   286→
+   287→  if (!hasFR && !hasNFR && !hasUS) {
+   288→    return <EmptyState message="Спецификация пуста" />;
+   289→  }
+   290→
+   291→  return (
+   292→    <div className="space-y-6">
+   293→      {/* Functional Requirements */}
+   294→      {hasFR && (
+   295→        <div>
+   296→          <SectionLabel icon={CheckSquare}>Функциональные требования (FR)</SectionLabel>
+   297→          <ScrollArea className="max-h-80">
+   298→            <div className="space-y-2 pr-4">
+   299→              {s.functionalRequirements!.map((fr) => (
+   300→                <div
+   301→                  key={fr.id}
+   302→                  className="flex items-start gap-3 border-b border-white/5 pb-3"
+   303→                >
+   304→                  <Badge variant="outline" className="shrink-0 font-mono text-xs">
+   305→                    {fr.id}
+   306→                  </Badge>
+   307→                  <p className="text-sm">{fr.statement}</p>
+   308→                </div>
+   309→              ))}
+   310→            </div>
+   311→          </ScrollArea>
+   312→        </div>
+   313→      )}
+   314→
+   315→      {/* Non-Functional Requirements */}
+   316→      {hasNFR && (
+   317→        <div>
+   318→          <SectionLabel icon={BarChart3}>Нефункциональные требования (NFR)</SectionLabel>
+   319→          <ScrollArea className="max-h-80">
+   320→            <div className="space-y-2 pr-4">
+   321→              {s.nonFunctionalRequirements!.map((nfr) => (
+   322→                <div
+   323→                  key={nfr.id}
+   324→                  className="flex items-start gap-3 border-b border-white/5 pb-3"
+   325→                >
+   326→                  <Badge variant="outline" className="shrink-0 font-mono text-xs">
+   327→                    {nfr.id}
+   328→                  </Badge>
+   329→                  <div className="flex-1">
+   330→                    <p className="text-sm">{nfr.statement}</p>
+   331→                    <Badge variant="secondary" className="mt-1 text-xs">
+   332→                      {nfr.category}
+   333→                    </Badge>
+   334→                  </div>
+   335→                </div>
+   336→              ))}
+   337→            </div>
+   338→          </ScrollArea>
+   339→        </div>
+   340→      )}
+   341→
+   342→      {/* User Stories */}
+   343→      {hasUS && (
+   344→        <div>
+   345→          <SectionLabel icon={User}>User Stories</SectionLabel>
+   346→          <div className="space-y-4">
+   347→            {s.userStories!.map((us) => (
+   348→              <div key={us.id} className="border-b border-white/5 pb-4">
+   349→                <h4 className="text-sm font-mono font-semibold mb-1">{us.id}</h4>
+   350→                <p className="text-sm italic text-muted-foreground mb-2">
+   351→                  Как <strong>{us.asRole}</strong>, я хочу{" "}
+   352→                  <strong>{us.iWant}</strong>, чтобы <strong>{us.soThat}</strong>.
+   353→                </p>
+   354→                {us.acceptanceCriteria && us.acceptanceCriteria.length > 0 && (
+   355→                  <div>
+   356→                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+   357→                      Acceptance Criteria
+   358→                    </p>
+   359→                    <ul className="space-y-1">
+   360→                      {us.acceptanceCriteria.map((ac, i) => (
+   361→                        <li
+   362→                          key={i}
+   363→                          className="text-sm text-muted-foreground flex items-start gap-2"
+   364→                        >
+   365→                          <Target className="h-3 w-3 mt-1 shrink-0" />
+   366→                          {ac}
+   367→                        </li>
+   368→                      ))}
+   369→                    </ul>
+   370→                  </div>
+   371→                )}
+   372→              </div>
+   373→            ))}
+   374→          </div>
+   375→        </div>
+   376→      )}
+   377→    </div>
+   378→  );
+   379→}
+   380→
+   381→/* ─── PATTERN MINING TAB (batch only) ─── */
+   382→function PatternMiningTab({ data }: { data: AnalysisResult }) {
+   383→  const pm = data.patternMining;
+   384→  if (!pm || !pm.groups || pm.groups.length === 0) {
+   385→    return (
+   386→      <EmptyState message="Pattern Mining доступен только при анализе 2+ URL" />
+   387→    );
+   388→  }
+   389→
+   390→  return (
+   391→    <div className="space-y-6">
+   392→      {pm.summary && (
+   393→        <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   394→          <p className="text-sm font-medium">{pm.summary}</p>
+   395→        </div>
+   396→      )}
+   397→
+   398→      {pm.groups.map((group, gi) => (
+   399→        <div key={gi}>
+   400→          <SectionLabel icon={GitCompare}>{group.category}</SectionLabel>
+   401→          <div className="space-y-3">
+   402→            {group.patterns.map((pattern, pi) => (
+   403→              <div key={pi} className="border-b border-white/5 pb-3">
+   404→                <div className="flex items-center justify-between mb-2">
+   405→                  <h4 className="text-base font-semibold">{pattern.name}</h4>
+   406→                  <div className="flex items-center gap-2">
+   407→                    <Badge variant="secondary">
+   408→                      {pattern.count}/{data.type === "batch" ? String((data as Record<string, unknown>).totalUrls ?? "?") : "?"}
+   409→                    </Badge>
+   410→                    <Badge>{pattern.percentage}%</Badge>
+   411→                  </div>
+   412→                </div>
+   413→                <div className="space-y-2">
+   414→                  {pattern.examples && pattern.examples.length > 0 && (
+   415→                    <div className="flex flex-wrap gap-1">
+   416→                      {pattern.examples.map((ex, i) => (
+   417→                        <Badge key={i} variant="outline" className="text-xs">
+   418→                          {ex}
+   419→                        </Badge>
+   420→                      ))}
+   421→                    </div>
+   422→                  )}
+   423→                  <p className="text-sm text-muted-foreground">{pattern.takeaway}</p>
+   424→                </div>
+   425→              </div>
+   426→            ))}
+   427→          </div>
+   428→        </div>
+   429→      ))}
+   430→    </div>
+   431→  );
+   432→}
+   433→
+   434→/* ─── REVERSE ENGINEERING TAB ─── */
+   435→function ReverseEngineeringTab({ data }: { data: AnalysisResult }) {
+   436→  const re = data.reverseEngineering;
+   437→  if (!re) return <EmptyState message="Данные reverse engineering недоступны" />;
+   438→
+   439→  const categories = [
+   440→    { key: "frontend", label: "Фронтенд-стек", icon: Layers },
+   441→    { key: "animationLib", label: "Библиотеки анимаций", icon: Sparkles },
+   442→    { key: "dataLayer", label: "Слой данных / State", icon: FileText },
+   443→    { key: "backend", label: "Бэкенд-намёки", icon: Cpu },
+   444→    { key: "infra", label: "Инфраструктура", icon: Wrench },
+   445→  ] as const;
+   446→
+   447→  return (
+   448→    <div className="space-y-4">
+   449→      <p className="text-sm text-muted-foreground">
+   450→        Поведенческий reverse engineering — реконструкция вероятной архитектуры
+   451→        по визуальным признакам без доступа к исходному коду.
+   452→      </p>
+   453→      <div className="space-y-4">
+   454→        {categories.map(({ key, label, icon: Icon }) => {
+   455→          const item = re[key];
+   456→          if (!item) return null;
+   457→          return (
+   458→            <div key={key} className="border-l-2 border-l-white/10 pl-4 py-3">
+   459→              <div className="flex items-center justify-between mb-1">
+   460→                <h4 className="text-base font-semibold flex items-center gap-2">
+   461→                  <Icon className="h-4 w-4" />
+   462→                  {label}
+   463→                </h4>
+   464→                <ConfidenceBadge confidence={item.confidence || "low"} />
+   465→              </div>
+   466→              <div className="space-y-1">
+   467→                <p className="font-medium text-sm">{item.stack}</p>
+   468→                <p className="text-sm text-muted-foreground">{item.evidence}</p>
+   469→              </div>
+   470→            </div>
+   471→          );
+   472→        })}
+   473→      </div>
+   474→    </div>
+   475→  );
+   476→}
+   477→
+   478→/* ─── AUDIT TAB ─── */
+   479→function AuditTab({ data }: { data: AnalysisResult }) {
+   480→  const a = data.audit;
+   481→  if (!a?.problems || a.problems.length === 0) {
+   482→    return <EmptyState message="Данные аудита недоступны" />;
+   483→  }
+   484→
+   485→  const severityBorder = (severity: string) => {
+   486→    if (severity === "critical") return "border-l-red-500";
+   487→    if (severity === "major") return "border-l-orange-500";
+   488→    return "border-l-white/10";
+   489→  };
+   490→
+   491→  return (
+   492→    <div className="space-y-4">
+   493→      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+   494→        <span>Всего проблем: <strong>{a.problems.length}</strong></span>
+   495→        <span className="flex items-center gap-1">
+   496→          <span className="inline-block h-2 w-4 bg-red-500" /> Critical:{" "}
+   497→          <strong>{a.problems.filter((p) => p.severity === "critical").length}</strong>
+   498→        </span>
+   499→        <span className="flex items-center gap-1">
+   500→          <span className="inline-block h-2 w-4 bg-orange-500" /> Major:{" "}
+   501→          <strong>{a.problems.filter((p) => p.severity === "major").length}</strong>
+   502→        </span>
+   503→        <span className="flex items-center gap-1">
+   504→          <span className="inline-block h-2 w-4 bg-yellow-500" /> Minor:{" "}
+   505→          <strong>{a.problems.filter((p) => p.severity === "minor").length}</strong>
+   506→        </span>
+   507→      </div>
+   508→
+   509→      <ScrollArea className="max-h-[600px]">
+   510→        <div className="space-y-3 pr-4">
+   511→          {a.problems.map((problem, i) => (
+   512→            <div
+   513→              key={i}
+   514→              className={`border-l-2 pl-4 py-3 ${severityBorder(problem.severity)}`}
+   515→            >
+   516→              <div className="flex items-start justify-between gap-2 mb-2">
+   517→                <h4 className="text-sm font-semibold flex items-center gap-2">
+   518→                  <AlertTriangle className="h-4 w-4 shrink-0" />
+   519→                  <Badge variant="outline" className="text-xs">
+   520→                    {problem.area}
+   521→                  </Badge>
+   522→                </h4>
+   523→                <SeverityBadge severity={problem.severity} />
+   524→              </div>
+   525→              <div className="space-y-2">
+   526→                <p className="text-sm">{problem.description}</p>
+   527→                <div className="border-l border-l-white/10 pl-3 py-2 mt-2">
+   528→                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+   529→                    Рекомендация
+   530→                  </p>
+   531→                  <p className="text-sm text-muted-foreground">
+   532→                    {problem.recommendation}
+   533→                  </p>
+   534→                </div>
+   535→              </div>
+   536→            </div>
+   537→          ))}
+   538→        </div>
+   539→      </ScrollArea>
+   540→    </div>
+   541→  );
+   542→}
+   543→
+   544→/* ─── HEURISTIC EVALUATION TAB ─── */
+   545→function HeuristicTab({ data }: { data: AnalysisResult }) {
+   546→  const he = data.heuristicEvaluation;
+   547→  if (!he?.scores || he.scores.length === 0) {
+   548→    return <EmptyState message="Данные эвристической оценки недоступны" />;
+   549→  }
+   550→
+   551→  const avg = he.averageScore ?? 0;
+   552→
+   553→  const scoreColor = (s: number) => {
+   554→    if (s >= 3.5) return "text-emerald-600 dark:text-emerald-400";
+   555→    if (s >= 2.5) return "text-amber-600 dark:text-amber-400";
+   556→    if (s >= 1.5) return "text-orange-600 dark:text-orange-400";
+   557→    return "text-red-600 dark:text-red-400";
+   558→  };
+   559→
+   560→  const scoreBg = (s: number) => {
+   561→    if (s >= 3.5) return "bg-emerald-500";
+   562→    if (s >= 2.5) return "bg-amber-500";
+   563→    if (s >= 1.5) return "bg-orange-500";
+   564→    return "bg-red-500";
+   565→  };
+   566→
+   567→  return (
+   568→    <div className="space-y-6">
+   569→      {/* Average score */}
+   570→      <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   571→        <div className="flex flex-col sm:flex-row items-center gap-4">
+   572→          <div className="flex items-baseline gap-1">
+   573→            <span className={`text-4xl font-bold ${scoreColor(avg)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+   574→              {avg.toFixed(1)}
+   575→            </span>
+   576→            <span className="text-lg text-muted-foreground">/4.0</span>
+   577→          </div>
+   578→          <div className="text-center sm:text-left">
+   579→            <p className="font-semibold text-lg">Общий балл</p>
+   580→            <p className="text-sm text-muted-foreground mt-1">
+   581→              {he.verdict || "Без вердикта"}
+   582→            </p>
+   583→          </div>
+   584→        </div>
+   585→      </div>
+   586→
+   587→      {/* Individual scores */}
+   588→      <div className="space-y-3">
+   589→        {he.scores.map((item, i) => (
+   590→          <div key={i} className="border-b border-white/5 pb-3 pt-3">
+   591→            <div className="flex items-start justify-between gap-4">
+   592→              <div className="flex-1 space-y-1">
+   593→                <p className="text-sm font-medium">{item.heuristic}</p>
+   594→                {item.observations && (
+   595→                  <p className="text-xs text-muted-foreground">{item.observations}</p>
+   596→                )}
+   597→                {item.recommendation && (
+   598→                    <p className="text-xs text-muted-foreground italic mt-1">
+   599→                      {item.recommendation}
+   600→                    </p>
+   601→                )}
+   602→              </div>
+   603→              <div className="flex flex-col items-center gap-1 shrink-0">
+   604→                <span className={`text-lg font-bold ${scoreColor(item.score)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+   605→                  {item.score}
+   606→                </span>
+   607→                <div className="flex gap-0.5">
+   608→                  {[0, 1, 2, 3].map((dot) => (
+   609→                    <span
+   610→                      key={dot}
+   611→                      className={`inline-block h-1.5 w-5 ${
+   612→                        dot < item.score ? scoreBg(item.score) : "bg-muted"
+   613→                      }`}
+   614→                    />
+   615→                  ))}
+   616→                </div>
+   617→              </div>
+   618→            </div>
+   619→          </div>
+   620→        ))}
+   621→      </div>
+   622→    </div>
+   623→  );
+   624→}
+   625→
+   626→/* ─── EMPTY STATE ─── */
+   627→function EmptyState({ message }: { message: string }) {
+   628→  return (
+   629→    <div className="py-12 text-center">
+   630→      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" aria-hidden="true" />
+   631→      <p className="text-muted-foreground">{message}</p>
+   632→    </div>
+   633→  );
+   634→}
+   635→
+   636→/* ─── META INFO ─── */
+   637→function MetaInfo({ data }: { data: AnalysisResult }) {
+   638→  const m = data.meta;
+   639→  if (!m) return null;
+   640→
+   641→  return (
+   642→    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+   643→      {m.dataSources?.map((ds) => (
+   644→        <Badge key={ds} variant="outline" className="text-xs">
+   645→          {ds}
+   646→        </Badge>
+   647→      ))}
+   648→      {m.confidence && <ConfidenceBadge confidence={m.confidence} />}
+   649→      {m.caveats?.map((c, i) => (
+   650→        <span key={i} className="text-xs text-muted-foreground italic">
+   651→          {c}
+   652→        </span>
+   653→      ))}
+   654→    </div>
+   655→  );
+   656→}
+   657→
+   658→/* ─── MAIN RESULTS COMPONENT ─── */
+   659→export function AnalysisResults() {
+   660→  const { result, reset, designMdContent } = useAnalysisStore();
+   661→  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+   662→
+   663→  if (!result) return null;
+   664→
+   665→  const isBatch = result.type === "batch";
+   666→  const jsonStr = JSON.stringify(result, null, 2);
+   667→
+   668→  type CardConfig = {
+   669→    id: string;
+   670→    label: string;
+   671→    icon: React.ElementType;
+   672→    colSpan: number;
+   673→    summary: string;
+   674→    tab: React.ComponentType<{ data: AnalysisResult }>;
+   675→    condition?: boolean;
+   676→  };
+   677→
+   678→  const cards: CardConfig[] = [
+   679→    {
+   680→      id: "teardown",
+   681→      label: "Teardown",
+   682→      icon: Palette,
+   683→      colSpan: 1,
+   684→      summary: result.teardown?.title || "Визуальный разбор продукта",
+   685→      tab: TeardownTab,
+   686→    },
+   687→    {
+   688→      id: "deconstruction",
+   689→      label: "Deconstruction",
+   690→      icon: Layers,
+   691→      colSpan: 1,
+   692→      summary: result.deconstruction?.layers
+   693→        ? `${result.deconstruction.layers.length} смысловых слоёв`
+   694→        : "Смысловые слои продукта",
+   695→      tab: DeconstructionTab,
+   696→    },
+   697→    {
+   698→      id: "spec",
+   699→      label: "Spec",
+   700→      icon: FileText,
+   701→      colSpan: 1,
+   702→      summary: result.spec?.functionalRequirements
+   703→        ? `${result.spec.functionalRequirements.length} FR`
+   704→        : "Спецификация",
+   705→      tab: SpecTab,
+   706→    },
+   707→    ...(isBatch
+   708→      ? [
+   709→          {
+   710→            id: "patterns",
+   711→            label: "Patterns",
+   712→            icon: GitCompare,
+   713→            colSpan: 1,
+   714→            summary: result.patternMining?.summary || "Паттерны между URL",
+   715→            tab: PatternMiningTab,
+   716→            condition: isBatch,
+   717→          },
+   718→        ]
+   719→      : []),
+   720→    {
+   721→      id: "reverse",
+   722→      label: "Reverse Eng.",
+   723→      icon: Cpu,
+   724→      colSpan: 1,
+   725→      summary: "Реконструкция архитектуры",
+   726→      tab: ReverseEngineeringTab,
+   727→    },
+   728→    {
+   729→      id: "audit",
+   730→      label: "Audit",
+   731→      icon: AlertTriangle,
+   732→      colSpan: 2,
+   733→      summary: result.audit?.problems
+   734→        ? `${result.audit.problems.length} проблем`
+   735→        : "Аудит UI/UX",
+   736→      tab: AuditTab,
+   737→    },
+   738→    {
+   739→      id: "heuristic",
+   740→      label: "Heuristics",
+   741→      icon: ClipboardCheck,
+   742→      colSpan: 1,
+   743→      summary: result.heuristicEvaluation?.averageScore
+   744→        ? `Балл ${result.heuristicEvaluation.averageScore.toFixed(1)}`
+   745→        : "Эвристическая оценка",
+   746→      tab: HeuristicTab,
+   747→    },
+   748→    {
+   749→      id: "design-system",
+   750→      label: "Design System",
+   751→      icon: ScanSearch,
+   752→      colSpan: 3,
+   753→      summary: "Цвета, типографика, компоненты",
+   754→      tab: DesignSystemTab,
+   755→    },
+   756→    {
+   757→      id: "reference-code",
+   758→      label: "Reference Pipeline",
+   759→      icon: Wrench,
+   760→      colSpan: 3,
+   761→      summary: "Пошаговый pipeline с кодом",
+   762→      tab: ReferenceCodeTab,
+   763→      condition: !!result.referenceCode || !!useAnalysisStore.getState().referenceCodeContent,
+   764→    },
+   765→    {
+   766→      id: "rsc-payload",
+   767→      label: "RSC Payload",
+   768→      icon: Server,
+   769→      colSpan: 2,
+   770→      summary: result.rscPayload?.isNextJs
+   771→        ? `Next.js: ${result.rscPayload.serverComponents?.length || 0} SC, ${result.rscPayload.clientComponents?.length || 0} CC`
+   772→        : "RSC payload extraction",
+   773→      tab: RscPayloadTab,
+   774→      condition: !!result.rscPayload || !!useAnalysisStore.getState().rscPayloadContent,
+   775→    },
+   776→  ];
+   777→
+   778→  const toggleCard = (id: string) => {
+   779→    setExpandedCard((prev) => (prev === id ? null : id));
+   780→  };
+   781→
+   782→  return (
+   783→    <div className="space-y-4">
+   784→      {/* Header bar */}
+   785→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   786→        <div className="space-y-1">
+   787→          <h2 className="text-xl font-bold flex items-center gap-2">
+   788→            <Sparkles className="h-5 w-5 text-primary" />
+   789→            Результат анализа
+   790→            <Badge variant="secondary">
+   791→              {getSourceTypeBadgeText(result.sourceType, isBatch)}
+   792→            </Badge>
+   793→          </h2>
+   794→          <MetaInfo data={result} />
+   795→        </div>
+   796→        <div className="flex items-center gap-2 shrink-0">
+   797→          <CopyButton text={jsonStr} />
+   798→          <DownloadButton data={result} />
+   799→          <ExportMarkdownButton result={result} designMd={designMdContent} />
+   800→          <Button variant="ghost" size="sm" onClick={reset}>
+   801→            Новый анализ
+   802→          </Button>
+   803→        </div>
+   804→      </div>
+   805→
+   806→      {/* Bento Grid */}
+   807→      <div className="bento-grid">
+   808→        <AnimatePresence mode="wait">
+   809→          {cards.filter(c => c.condition !== false).map((card) => {
+   810→            const isExpanded = expandedCard === card.id;
+   811→            const Icon = card.icon;
+   812→            const TabComponent = card.tab;
+   813→
+   814→            return (
+   815→              <motion.div
+   816→                key={card.id}
+   817→                layout
+   818→                initial={{ opacity: 0, scale: 0.95 }}
+   819→                animate={{ opacity: 1, scale: 1 }}
+   820→                exit={{ opacity: 0, scale: 0.95 }}
+   821→                transition={{ duration: 0.2, ease: "easeInOut" }}
+   822→                className={`bento-card p-4 cursor-pointer ${
+   823→                  isExpanded ? "bento-card-expanded" : ""
+   824→                }`}
+   825→                style={
+   826→                  isExpanded
+   827→                    ? undefined
+   828→                    : { gridColumn: `span ${card.colSpan}` }
+   829→                }
+   830→                onClick={() => toggleCard(card.id)}
+   831→              >
+   832→                {/* Card Header */}
+   833→                <div className="flex items-center justify-between mb-2">
+   834→                  <div className="flex items-center gap-2">
+   835→                    <Icon className="h-4 w-4 text-emerald-400" />
+   836→                    <span className="text-sm font-medium">{card.label}</span>
+   837→                  </div>
+   838→                  {isExpanded ? (
+   839→                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+   840→                  ) : (
+   841→                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+   842→                  )}
+   843→                </div>
+   844→
+   845→                {/* Card Content */}
+   846→                {isExpanded ? (
+   847→                  <motion.div
+   848→                    initial={{ opacity: 0 }}
+   849→                    animate={{ opacity: 1 }}
+   850→                    transition={{ delay: 0.1 }}
+   851→                  >
+   852→                    <TabComponent data={result} />
+   853→                  </motion.div>
+   854→                ) : (
+   855→                  <p className="text-xs text-muted-foreground truncate">
+   856→                    {card.summary}
+   857→                  </p>
+   858→                )}
+   859→              </motion.div>
+   860→            );
+   861→          })}
+   862→        </AnimatePresence>
+   863→      </div>
+   864→    </div>
+   865→  );
+   866→}
