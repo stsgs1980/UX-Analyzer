@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { useAnalysisStore } from "@/store/analysis-store";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { useState, useMemo } from 'react';
+import { useAnalysisStore } from '@/store/analysis-store';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import {
   FolderTree,
   FileCode2,
@@ -13,8 +13,8 @@ import {
   ChevronRight,
   ChevronDown,
   Package,
-} from "lucide-react";
-import { toast } from "sonner";
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface GeneratedProjectData {
   files: Record<string, string>;
@@ -23,10 +23,10 @@ interface GeneratedProjectData {
 }
 
 function buildFileTree(files: Record<string, string>): TreeNode[] {
-  const root: TreeNode = { name: "", children: {}, path: "" };
+  const root: TreeNode = { name: '', children: {}, path: '' };
 
   for (const filePath of Object.keys(files)) {
-    const parts = filePath.split("/");
+    const parts = filePath.split('/');
     let node = root;
 
     for (let i = 0; i < parts.length; i++) {
@@ -36,7 +36,7 @@ function buildFileTree(files: Record<string, string>): TreeNode[] {
         node.children[part] = {
           name: part,
           children: {},
-          path: parts.slice(0, i + 1).join("/"),
+          path: parts.slice(0, i + 1).join('/'),
           isFile,
         };
       }
@@ -62,39 +62,40 @@ function sortTree(children: Record<string, TreeNode>): TreeNode[] {
 }
 
 function getLanguageFromPath(path: string): string {
-  if (path.endsWith(".tsx") || path.endsWith(".ts")) return "tsx";
-  if (path.endsWith(".css")) return "css";
-  if (path.endsWith(".json")) return "json";
-  if (path.endsWith(".mjs")) return "js";
-  return "text";
+  if (path.endsWith('.tsx') || path.endsWith('.ts')) return 'tsx';
+  if (path.endsWith('.css')) return 'css';
+  if (path.endsWith('.json')) return 'json';
+  if (path.endsWith('.mjs')) return 'js';
+  return 'text';
 }
 
 function getLanguageColor(lang: string): string {
   const colors: Record<string, string> = {
-    tsx: "text-blue-400",
-    css: "text-pink-400",
-    json: "text-yellow-400",
-    js: "text-amber-400",
-    text: "text-muted-foreground",
+    tsx: 'text-blue-400',
+    css: 'text-pink-400',
+    json: 'text-yellow-400',
+    js: 'text-amber-400',
+    text: 'text-muted-foreground',
   };
   return colors[lang] || colors.text;
 }
 
 export function GeneratedProjectTab() {
   const generatedProjectContent = useAnalysisStore((s) => s.generatedProjectContent);
+  const project = generatedProjectContent as GeneratedProjectData | null;
+  const fileTree = useMemo(() => (project ? buildFileTree(project.files) : []), [project]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
 
-  if (!generatedProjectContent) {
+  if (!generatedProjectContent || !project) {
     return (
       <div className="text-sm text-muted-foreground py-4">
-        Generated project is not available. Enable the "Reference Pipeline" option before running analysis.
+        Generated project is not available. Enable the "Reference Pipeline" option before running
+        analysis.
       </div>
     );
   }
 
-  const project = generatedProjectContent as GeneratedProjectData;
-  const fileTree = useMemo(() => buildFileTree(project.files), [project.files]);
   const fileCount = Object.keys(project.files).length;
 
   // Auto-select first file
@@ -118,24 +119,24 @@ export function GeneratedProjectTab() {
   const handleCopyFile = () => {
     if (!selectedFile || !project.files[selectedFile]) return;
     navigator.clipboard.writeText(project.files[selectedFile]);
-    toast.success("File content copied");
+    toast.success('File content copied');
   };
 
   const handleCopyAll = () => {
     const combined = Object.entries(project.files)
       .map(([path, content]) => `// ── ${path} ──\n${content}`)
-      .join("\n\n");
+      .join('\n\n');
     navigator.clipboard.writeText(combined);
-    toast.success("All files copied to clipboard");
+    toast.success('All files copied to clipboard');
   };
 
   const handleDownloadFile = () => {
     if (!selectedFile || !project.files[selectedFile]) return;
-    const blob = new Blob([project.files[selectedFile]], { type: "text/plain" });
+    const blob = new Blob([project.files[selectedFile]], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = selectedFile.split("/").pop() || "file";
+    a.download = selectedFile.split('/').pop() || 'file';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -265,7 +266,7 @@ function TreeNodeItem({
     return (
       <button
         className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-white/5 transition-colors flex items-center gap-1.5 ${
-          isSelected ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground"
+          isSelected ? 'bg-emerald-500/10 text-emerald-400' : 'text-muted-foreground'
         }`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={() => onSelect(node.path)}

@@ -12,57 +12,53 @@ export type {
   FetchResult,
   SourceMetadata,
   SourceAdapterFactory,
-} from "./types";
+} from './types';
 
-export {
-  resolveSourceType,
-  getSourceTypeLabel,
-  isUrlOfType,
-} from "./registry";
+export { resolveSourceType, getSourceTypeLabel, isUrlOfType } from './registry';
 
-export { ImageAdapter } from "./image-adapter";
-export { PinterestAdapter } from "./pinterest-adapter";
-export { PinterestBoardAdapter } from "./pinterest-board-adapter";
-export { UrlAdapter } from "./url-adapter";
-export { DribbbleAdapter } from "./dribbble-adapter";
-export { BehanceAdapter } from "./behance-adapter";
-export { CodePenAdapter } from "./codepen-adapter";
-export { GitHubAdapter } from "./github-adapter";
+export { ImageAdapter } from './image-adapter';
+export { PinterestAdapter } from './pinterest-adapter';
+export { PinterestBoardAdapter } from './pinterest-board-adapter';
+export { UrlAdapter } from './url-adapter';
+export { DribbbleAdapter } from './dribbble-adapter';
+export { BehanceAdapter } from './behance-adapter';
+export { CodePenAdapter } from './codepen-adapter';
+export { GitHubAdapter } from './github-adapter';
 
 /**
  * Create the appropriate adapter instance for the given inputs.
  * This is the main entry point — used by route.ts and tests.
  */
-import type { FetchContext, SourceAdapter, SourceType } from "./types";
-import { resolveSourceType } from "./registry";
-import { ImageAdapter } from "./image-adapter";
-import { PinterestAdapter } from "./pinterest-adapter";
-import { PinterestBoardAdapter } from "./pinterest-board-adapter";
-import { UrlAdapter } from "./url-adapter";
-import { DribbbleAdapter } from "./dribbble-adapter";
-import { BehanceAdapter } from "./behance-adapter";
-import { CodePenAdapter } from "./codepen-adapter";
-import { GitHubAdapter } from "./github-adapter";
+import type { FetchContext, SourceAdapter, SourceType } from './types';
+import { resolveSourceType } from './registry';
+import { ImageAdapter } from './image-adapter';
+import { PinterestAdapter } from './pinterest-adapter';
+import { PinterestBoardAdapter } from './pinterest-board-adapter';
+import { UrlAdapter } from './url-adapter';
+import { DribbbleAdapter } from './dribbble-adapter';
+import { BehanceAdapter } from './behance-adapter';
+import { CodePenAdapter } from './codepen-adapter';
+import { GitHubAdapter } from './github-adapter';
 
 export function createAdapter(ctx: FetchContext): SourceAdapter {
   const type = resolveSourceType(ctx.urls, ctx.imageBase64);
 
   switch (type) {
-    case "image":
+    case 'image':
       return new ImageAdapter();
-    case "pinterest":
+    case 'pinterest':
       return new PinterestAdapter();
-    case "pinterest-board":
+    case 'pinterest-board':
       return new PinterestBoardAdapter();
-    case "dribbble":
+    case 'dribbble':
       return new DribbbleAdapter();
-    case "behance":
+    case 'behance':
       return new BehanceAdapter();
-    case "codepen":
+    case 'codepen':
       return new CodePenAdapter();
-    case "github":
+    case 'github':
       return new GitHubAdapter();
-    case "url":
+    case 'url':
     default:
       return new UrlAdapter();
   }

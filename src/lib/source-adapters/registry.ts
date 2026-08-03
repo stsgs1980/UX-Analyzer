@@ -5,7 +5,7 @@
  * Falls back to UrlAdapter for anything that doesn't match.
  */
 
-import type { SourceType, SourceAdapter, FetchContext } from "./types";
+import type { SourceType, SourceAdapter, FetchContext } from './types';
 
 /** Pattern → SourceType mapping, checked in order (first match wins) */
 interface UrlPattern {
@@ -24,33 +24,33 @@ interface UrlPattern {
 const URL_PATTERNS: UrlPattern[] = [
   {
     pattern: /pinterest\.[a-z]+\/[^/]+\/boards\//i,
-    type: "pinterest-board",
-    label: "Pinterest Board",
+    type: 'pinterest-board',
+    label: 'Pinterest Board',
   },
   {
     pattern: /pinterest\.[a-z]+\//i,
-    type: "pinterest",
-    label: "Pinterest Pin",
+    type: 'pinterest',
+    label: 'Pinterest Pin',
   },
   {
     pattern: /dribbble\.com\/shots\//i,
-    type: "dribbble",
-    label: "Dribbble Shot",
+    type: 'dribbble',
+    label: 'Dribbble Shot',
   },
   {
     pattern: /behance\.net\/gallery\//i,
-    type: "behance",
-    label: "Behance Project",
+    type: 'behance',
+    label: 'Behance Project',
   },
   {
     pattern: /codepen\.io\//i,
-    type: "codepen",
-    label: "CodePen",
+    type: 'codepen',
+    label: 'CodePen',
   },
   {
     pattern: /github\.com\/[^/]+\/[^/]+/i,
-    type: "github",
-    label: "GitHub Repository",
+    type: 'github',
+    label: 'GitHub Repository',
   },
 ];
 
@@ -83,13 +83,10 @@ function isDirectImageUrl(url: string): boolean {
  * 3. Direct image URL → "image"
  * 4. Everything else → "url"
  */
-export function resolveSourceType(
-  urls: string[],
-  imageBase64?: string,
-): SourceType {
+export function resolveSourceType(urls: string[], imageBase64?: string): SourceType {
   // Image upload takes priority
   if (imageBase64) {
-    return "image";
+    return 'image';
   }
 
   // Check URL patterns (first URL wins for mixed input)
@@ -100,23 +97,23 @@ export function resolveSourceType(
     }
     // Direct image URL
     if (isDirectImageUrl(urls[0])) {
-      return "image";
+      return 'image';
     }
   }
 
-  return "url";
+  return 'url';
 }
 
 /**
  * Get human-readable label for a source type.
  */
 export function getSourceTypeLabel(type: SourceType): string {
-  const pattern = URL_PATTERNS.find(p => p.type === type);
+  const pattern = URL_PATTERNS.find((p) => p.type === type);
   if (pattern) return pattern.label;
 
   const labels: Record<string, string> = {
-    url: "Web Page",
-    image: "Image",
+    url: 'Web Page',
+    image: 'Image',
   };
   return labels[type] || type;
 }

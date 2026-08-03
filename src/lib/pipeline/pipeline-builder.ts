@@ -6,20 +6,20 @@
  * and this module translates those capabilities into the correct pipeline.
  */
 
-import type { SourceAdapter } from "@/lib/source-adapters/types";
-import type { PipelineStep } from "./types";
-import type { StepGroup } from "./runner";
+import type { SourceAdapter } from '@/lib/source-adapters/types';
+import type { PipelineStep } from './types';
+import type { StepGroup } from './runner';
 
 // ── Import all available steps ──
-import { fetchSourceStep } from "./steps/fetch-source";
-import { fetchPagesStep } from "./steps/fetch-pages";
-import { screenshotStep } from "./steps/screenshot";
-import { vlmAnalysisStep } from "./steps/vlm-analysis";
-import { llmAnalysisStep } from "./steps/llm-analysis";
-import { designMdStep } from "./steps/design-md";
-import { rscExtractStep } from "./steps/rsc-extract";
-import { referenceCodeStep } from "./steps/reference-code";
-import { dbSaveStep } from "./steps/db-save";
+import { fetchSourceStep } from './steps/fetch-source';
+import { fetchPagesStep } from './steps/fetch-pages';
+import { screenshotStep } from './steps/screenshot';
+import { vlmAnalysisStep } from './steps/vlm-analysis';
+import { llmAnalysisStep } from './steps/llm-analysis';
+import { designMdStep } from './steps/design-md';
+import { rscExtractStep } from './steps/rsc-extract';
+import { referenceCodeStep } from './steps/reference-code';
+import { dbSaveStep } from './steps/db-save';
 
 export interface BuildPipelineOptions {
   adapter: SourceAdapter;
@@ -53,7 +53,7 @@ export function buildPipeline(opts: BuildPipelineOptions): StepGroup[] {
   }
 
   // Step 3: Screenshot (only for URL-type adapters that can fetch HTML)
-  if (adapter.canFetchHtml && adapter.category !== "visual") {
+  if (adapter.canFetchHtml && adapter.category !== 'visual') {
     groups.push(screenshotStep);
   }
 

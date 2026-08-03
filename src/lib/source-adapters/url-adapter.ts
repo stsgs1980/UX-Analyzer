@@ -11,19 +11,19 @@
  * This adapter primarily handles source detection and provides the URL for subsequent steps.
  */
 
-import type { SourceAdapter, FetchContext, FetchResult } from "./types";
+import type { SourceAdapter, FetchContext, FetchResult } from './types';
 
 export class UrlAdapter implements SourceAdapter {
-  readonly type = "url" as const;
-  readonly label = "Web Page";
+  readonly type = 'url' as const;
+  readonly label = 'Web Page';
   readonly canFetchHtml = true;
   readonly canExtractRsc = true;
   readonly hasMultiplePages = true;
   readonly hasSourceCode = false;
-  readonly category = "hybrid" as const;
+  readonly category = 'hybrid' as const;
 
   async fetch(ctx: FetchContext): Promise<FetchResult> {
-    const url = ctx.urls[0] || "";
+    const url = ctx.urls[0] || '';
 
     return {
       images: [],

@@ -5,18 +5,11 @@
  * a self-contained adapter interface per source type.
  */
 
-import type { PipelineStep, PageContent } from "@/lib/pipeline/types";
+import type { PipelineStep, PageContent } from '@/lib/pipeline/types';
 
 /** All supported source type identifiers */
 export type SourceType =
-  | "url"
-  | "pinterest"
-  | "pinterest-board"
-  | "image"
-  | "dribbble"
-  | "behance"
-  | "codepen"
-  | "github";
+  'url' | 'pinterest' | 'pinterest-board' | 'image' | 'dribbble' | 'behance' | 'codepen' | 'github';
 
 /**
  * A source adapter — self-contained module for one source type.
@@ -43,7 +36,7 @@ export interface SourceAdapter {
   readonly hasSourceCode: boolean;
 
   /** Category: affects pipeline path selection */
-  readonly category: "visual" | "code" | "hybrid";
+  readonly category: 'visual' | 'code' | 'hybrid';
 
   /**
    * Primary fetch — returns extracted data for the pipeline.

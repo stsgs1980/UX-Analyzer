@@ -12,25 +12,13 @@ async function addUrlViaStore(page: import("@playwright/test").Page, url: string
 async function waitForAnalyzeReady(page: import("@playwright/test").Page) {
   await page.waitForFunction(() => {
     const btn = [...document.querySelectorAll("button")].find(
-      (b) => b.textContent?.includes("Запустить анализ")
+      (b) => b.textContent?.includes("Запустить анализ"),
     );
     return btn && !btn.disabled;
   }, { timeout: 5_000 });
 }
 
 // ── Mock data ──
-
-const MOCK_PROGRESS_STEPS = [
-  { type: "progress", step: "init", message: "Инициализирую AI-движок...", progress: 0.02, analysisId: "mock-id-1" },
-  { type: "progress", step: "fetching", message: "Читаю страницу и ищу контекст...", progress: 0.14, analysisId: "mock-id-1" },
-  { type: "progress", step: "fetching", message: "Получено 1 страниц, 2 результатов поиска", progress: 0.32, analysisId: "mock-id-1" },
-  { type: "progress", step: "vlm", message: "Распознаю визуальный дизайн...", progress: 0.38, analysisId: "mock-id-1" },
-  { type: "progress", step: "preparing", message: "Компоную данные для AI-анализа...", progress: 0.52, analysisId: "mock-id-1" },
-  { type: "progress", step: "analyzing", message: "AI обрабатывает: Анализ визуального стиля...", progress: 0.55, analysisId: "mock-id-1" },
-  { type: "progress", step: "parsing", message: "Разбираю структуру результатов...", progress: 0.82, analysisId: "mock-id-1" },
-  { type: "progress", step: "saving", message: "Сохраняю результаты в базу...", progress: 0.93, analysisId: "mock-id-1" },
-  { type: "progress", step: "done", message: "Анализ завершён!", progress: 1, analysisId: "mock-id-1" },
-];
 
 const MOCK_RESULT = {
   type: "single",
@@ -96,13 +84,81 @@ const MOCK_RESULT = {
   },
 };
 
-/** Build a mock SSE response body for /api/analyze */
-function mockSSE(
-  steps: Array<Record<string, unknown>>,
-  finalEvent: { type: string; [key: string]: unknown }
-): string {
-  const events = steps.map((s) => `data: ${JSON.stringify(s)}\n\n`).join("");
-  return events + `data: ${JSON.stringify(finalEvent)}\n\n`;
+const MOCK_ANALYSIS_ID = "mock-e2e-id";
+
+/**
+ * Mock the polling-based analysis flow:
+ * POST /api/analyze → { analysisId, status: "running" }
+ * GET  /api/analyze/progress/:id → progress → completed
+ */
+function mockPollingAnalysis(page: import("@playwright/test").Page, options?: { error?: string }) {
+  let pollCount = 0;
+
+  // Mock POST /api/analyze — returns JSON immediately
+  page.route("**/api/analyze", async (route) => {
+    const req = route.request();
+    if (req.method() === "POST") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ analysisId: MOCK_ANALYSIS_ID, status: "running" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  // Mock GET /api/analyze/progress/:id — returns progress then completed
+  page.route("**/api/analyze/progress/**", async (route) => {
+    pollCount++;
+
+    if (options?.error && pollCount >= 2) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          step: "error",
+          message: options.error,
+          progress: 0.3,
+          status: "error",
+          error: options.error,
+        }),
+      });
+      return;
+    }
+
+    if (pollCount >= 3) {
+      // Completed
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          step: "done",
+          message: "Анализ завершён!",
+          progress: 1,
+          status: "completed",
+          result: MOCK_RESULT,
+        }),
+      });
+      return;
+    }
+
+    // In-progress response
+    const progressSteps = [
+      { step: "init", message: "Инициализирую AI-движок...", progress: 0.02 },
+      { step: "fetching", message: "Читаю страницу и ищу контекст...", progress: 0.32 },
+    ];
+    const step = progressSteps[Math.min(pollCount - 1, progressSteps.length - 1)];
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...step,
+        status: "running",
+      }),
+    });
+  });
 }
 
 // ── Tests ──
@@ -156,23 +212,8 @@ test.describe("UX Analyzer E2E", () => {
   });
 
   test("analysis flow: progress → result with tabs", async ({ page }) => {
-    // Mock SSE analyze endpoint
-    await page.route("**/api/analyze", async (route) => {
-      const sseBody = mockSSE(MOCK_PROGRESS_STEPS, {
-        type: "result",
-        data: MOCK_RESULT,
-        analysisId: "mock-id-1",
-      });
-      await route.fulfill({
-        status: 200,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-        },
-        body: sseBody,
-      });
-    });
+    // Mock the polling-based analysis flow
+    mockPollingAnalysis(page);
 
     // Mock history and analyses endpoints
     await page.route("**/api/analyses**", async (route) => {
@@ -191,38 +232,22 @@ test.describe("UX Analyzer E2E", () => {
     });
 
     // Click analyze
-    await page.locator('button:has-text("Запустить анализ")').click();
+    await page.locator('button:has-text("Запустить анализ")').first().click();
 
-    // Result section should appear (mock SSE delivers all events in one chunk)
+    // Result section should appear (polling delivers completed state)
     await expect(page.locator('text="Результат анализа"')).toBeVisible({ timeout: 15_000 });
 
     // Verify cards inside the result section
-    const resultSection = page.locator('text="Результат анализа"').locator('..').locator('..').locator('..');
-    const cards = resultSection.locator('.bento-card');
+    const resultSection = page.locator('text="Результат анализа"').locator("..").locator("..").locator("..");
+    const cards = resultSection.locator(".bento-card");
     await expect(cards.first()).toBeVisible({ timeout: 5_000 });
     const cardCount = await cards.count();
     expect(cardCount).toBeGreaterThanOrEqual(4);
   });
 
   test("error during analysis shows error message", async ({ page }) => {
-    // Mock SSE that sends progress then error.
-    // Use a real response body stream to ensure events arrive in separate chunks.
-    await page.route("**/api/analyze", async (route) => {
-      const progressChunk = MOCK_PROGRESS_STEPS.slice(0, 3)
-        .map((s) => `data: ${JSON.stringify(s)}\n\n`)
-        .join("");
-      const errorChunk = `data: ${JSON.stringify({ type: "error", message: "Ошибка инициализации AI. Попробуйте позже." })}\n\n`;
-
-      await route.fulfill({
-        status: 200,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-        },
-        body: progressChunk + errorChunk,
-      });
-    });
+    // Mock the polling flow that results in an error
+    mockPollingAnalysis(page, { error: "Ошибка инициализации AI. Попробуйте позже." });
 
     await page.route("**/api/analyses**", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
@@ -237,7 +262,7 @@ test.describe("UX Analyzer E2E", () => {
 
     await page.locator('button:has-text("Запустить анализ")').click();
 
-    // Error appears (progress events processed in same tick → only error state renders)
+    // Error appears after polling returns error status
     await expect(page.locator('text="Ошибка анализа"')).toBeVisible({ timeout: 10_000 });
   });
 });
