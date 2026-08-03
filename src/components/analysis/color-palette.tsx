@@ -1,10 +1,10 @@
 "use client";
 
 import { Copy, Check } from "lucide-react";
-import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useColorCopy, usePaletteTabs } from "./use-color-palette-expanded";
 
 interface ColorSwatchProps {
   hex: string;
@@ -14,14 +14,7 @@ interface ColorSwatchProps {
 }
 
 function ColorSwatch({ hex, name, usage, percentage }: ColorSwatchProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(hex);
-    setCopied(true);
-    toast.success(`${hex} скопирован`);
-    setTimeout(() => setCopied(false), 1500);
-  }, [hex]);
+  const { copied, handleCopy } = useColorCopy(hex);
 
   // Determine if the color is light or dark for text contrast
   const isLight = isLightColor(hex);
@@ -86,7 +79,7 @@ interface ColorPaletteProps {
 }
 
 export function ColorPalette({ colors }: ColorPaletteProps) {
-  const [activeTab, setActiveTab] = useState<"dominant" | "groups">("dominant");
+  const { activeTab, setActiveTab } = usePaletteTabs();
 
   if (!colors) return null;
 

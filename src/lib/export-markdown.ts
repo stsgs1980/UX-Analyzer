@@ -1,4 +1,8 @@
 import type { AnalysisResult } from "@/store/analysis-store";
+import { renderTeardownSection } from "@/lib/export-markdown/teardown";
+import { renderSpecificationSection } from "@/lib/export-markdown/specification";
+import { renderVlmAnalysisSection } from "@/lib/export-markdown/vlm-analysis";
+import { renderRscPayloadSection } from "@/lib/export-markdown/rsc-payload";
 
 /**
  * Compiles a full analysis result into a well-structured Markdown document.
@@ -7,14 +11,7 @@ import type { AnalysisResult } from "@/store/analysis-store";
  */
 export function buildMarkdownExport(result: AnalysisResult, designMdContent?: string | null): string {
   const lines: string[] = [];
-  const td = result.teardown;
-  const decon = result.deconstruction;
-  const spec = result.spec;
-  const rev = result.reverseEngineering;
-  const audit = result.audit;
-  const heur = result.heuristicEvaluation;
-  const vlm = result.vlmAnalysis;
-  const rsc = result.rscPayload;
+  const { teardown: td, deconstruction: decon, spec, reverseEngineering: rev, audit, heuristicEvaluation: heur, vlmAnalysis: vlm, rscPayload: rsc } = result;
 
   // ── Header ──
   const title = td?.title || result.url || "UX Analysis Report";
@@ -35,28 +32,7 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
   lines.push("---\n");
 
   // ── Teardown ──
-  if (td) {
-    lines.push("## 1. Обзор продукта (Teardown)\n");
-    if (td.visualStyle) lines.push(`**Визуальный стиль:** ${td.visualStyle}`);
-    if (td.type) lines.push(`**Тип продукта:** ${td.type}`);
-
-    const techStack = Array.isArray(td.techStack) ? td.techStack : td.techStack ? [td.techStack] : [];
-    if (techStack.length) lines.push(`**Технологический стек:** ${techStack.join(", ")}`);
-
-    if (td.features?.length) {
-      lines.push("\n### Ключевые возможности");
-      td.features.forEach(f => lines.push(`- ${f}`));
-    }
-    if (td.interactions?.length) {
-      lines.push("\n### Взаимодействия");
-      td.interactions.forEach(i => lines.push(`- ${i}`));
-    }
-    if (td.inspiration?.length) {
-      lines.push("\n### Источники вдохновения");
-      td.inspiration.forEach(i => lines.push(`- ${i}`));
-    }
-    lines.push("\n---\n");
-  }
+  if (td) lines.push(renderTeardownSection(td));
 
   // ── Deconstruction ──
   if (decon?.layers?.length) {
@@ -73,42 +49,7 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
   }
 
   // ── Specification ──
-  if (spec) {
-    lines.push("## 3. Спецификация требований\n");
-
-    if (spec.functionalRequirements?.length) {
-      lines.push("### Функциональные требования");
-      lines.push("| ID | Требование |");
-      lines.push("|----|------------|");
-      spec.functionalRequirements.forEach(fr => {
-        lines.push(`| ${fr.id} | ${fr.statement} |`);
-      });
-      lines.push("");
-    }
-
-    if (spec.nonFunctionalRequirements?.length) {
-      lines.push("### нефункциональные требования");
-      lines.push("| ID | Категория | Требование |");
-      lines.push("|----|-----------|------------|");
-      spec.nonFunctionalRequirements.forEach(nfr => {
-        lines.push(`| ${nfr.id} | ${nfr.category} | ${nfr.statement} |`);
-      });
-      lines.push("");
-    }
-
-    if (spec.userStories?.length) {
-      lines.push("### Пользовательские истории");
-      spec.userStories.forEach(us => {
-        lines.push(`**${us.id}** — Как *${us.asRole}*, я хочу *${us.iWant}*, чтобы *${us.soThat}*.`);
-        if (us.acceptanceCriteria?.length) {
-          lines.push(`  **Критерии приёмки:**`);
-          us.acceptanceCriteria.forEach(ac => lines.push(`  - [ ] ${ac}`));
-        }
-        lines.push("");
-      });
-    }
-    lines.push("---\n");
-  }
+  if (spec) lines.push(renderSpecificationSection(spec));
 
   // ── Reverse Engineering ──
   if (rev) {
@@ -164,106 +105,7 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
   }
 
   // ── VLM Analysis ──
-  if (vlm) {
-    lines.push("## 7. Визуальный анализ (VLM)\n");
-
-    // Color palette
-    if (vlm.colorPalette) {
-      lines.push("### Палитра цветов");
-      const cp = vlm.colorPalette;
-      if (cp.dominantColors?.length) {
-        lines.push("| Цвет | HEX | Назначение | Доля (%) |");
-        lines.push("|------|-----|------------|----------|");
-        cp.dominantColors.forEach(c => {
-          lines.push(`| ${c.name} | \`${c.hex}\` | ${c.usage} | ${c.percentage}% |`);
-        });
-        lines.push("");
-      }
-      const colorGroups = [
-        { label: "Основные", colors: cp.primary },
-        { label: "Вторичные", colors: cp.secondary },
-        { label: "Акцентные", colors: cp.accent },
-        { label: "Фон", colors: cp.background },
-        { label: "Текст", colors: cp.text },
-      ];
-      colorGroups.forEach(g => {
-        if (g.colors?.length) {
-          lines.push(`**${g.label}:** ${g.colors.map(c => `\`${c}\``).join(", ")}`);
-        }
-      });
-      lines.push("");
-    }
-
-    // Typography
-    if (vlm.typography) {
-      lines.push("### Типографика");
-      if (vlm.typography.headings) {
-        const h = vlm.typography.headings;
-        lines.push(`- **Заголовки:** ${h.style}, ${h.weight} — ${h.characteristics}`);
-      }
-      if (vlm.typography.body) {
-        const b = vlm.typography.body;
-        lines.push(`- **Основной текст:** ${b.style}, ${b.weight} — ${b.characteristics}`);
-      }
-      if (vlm.typography.sizeScale?.length) {
-        lines.push(`- **Масштаб:** ${vlm.typography.sizeScale.join(" → ")}`);
-      }
-      lines.push("");
-    }
-
-    // Layout
-    if (vlm.layout) {
-      lines.push("### Сетка и компоновка");
-      const l = vlm.layout;
-      lines.push(`- **Тип сетки:** ${l.gridType}`);
-      lines.push(`- **Отступы:** ${l.spacing}`);
-      lines.push(`- **Выравнивание:** ${l.alignment}`);
-      lines.push(`- **Плотность:** ${l.density}`);
-      lines.push(`- **Макс. ширина контента:** ${l.maxContentWidth}`);
-      lines.push("");
-    }
-
-    // Components
-    if (vlm.components?.length) {
-      lines.push("### Компоненты");
-      vlm.components.forEach(c => {
-        lines.push(`- **${c.type}:** ${c.characteristics}, скругление: ${c.borderRadius}, тени: ${c.shadows}, состояния: ${c.states.join(", ")}`);
-      });
-      lines.push("");
-    }
-
-    // Mood & Tone
-    if (vlm.moodAndTone) {
-      lines.push("### Настроение и тон");
-      if (vlm.moodAndTone.keywords?.length) {
-        lines.push(`**Ключевые слова:** ${vlm.moodAndTone.keywords.join(", ")}`);
-      }
-      if (vlm.moodAndTone.description) {
-        lines.push(vlm.moodAndTone.description);
-      }
-      lines.push("");
-    }
-
-    // Accessibility
-    if (vlm.accessibilityNotes?.length) {
-      lines.push("### Доступность (Accessibility)");
-      vlm.accessibilityNotes.forEach(n => lines.push(`- ${n}`));
-      lines.push("");
-    }
-
-    // UI Patterns
-    if (vlm.uiPatterns?.length) {
-      lines.push("### UI паттерны");
-      lines.push("| Паттерн | Описание |");
-      lines.push("|---------|----------|");
-      vlm.uiPatterns.forEach(p => {
-        lines.push(`| ${p.pattern} | ${p.description} |`);
-      });
-      lines.push("");
-    }
-
-    lines.push("---\n");
-  }
+  if (vlm) lines.push(renderVlmAnalysisSection(vlm));
 
   // ── Design System Document ──
   if (designMdContent) {
@@ -273,36 +115,7 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
   }
 
   // ── RSC Payload ──
-  if (rsc) {
-    lines.push("## 9. RSC Payload (Next.js)\n");
-    lines.push(`- **Next.js обнаружен:** ${rsc.isNextJs ? "Да" : "Нет"}`);
-
-    if (rsc.serverComponents?.length) {
-      lines.push(`- **Server Components:** ${rsc.serverComponents.join(", ")}`);
-    }
-    if (rsc.clientComponents?.length) {
-      lines.push(`- **Client Components:** ${rsc.clientComponents.join(", ")}`);
-    }
-    if (rsc.fontPreloads?.length) {
-      lines.push(`- **Шрифты:** ${rsc.fontPreloads.join(", ")}`);
-    }
-    if (rsc.scriptPreloads?.length) {
-      lines.push(`- **Скрипты:** ${rsc.scriptPreloads.join(", ")}`);
-    }
-    if (rsc.summary) {
-      lines.push(`\n${rsc.summary}`);
-    }
-
-    if (rsc.routeTree?.length) {
-      lines.push("\n### Дерево маршрутов");
-      lines.push("| Сегмент | Page | Layout | Loading | Error |");
-      lines.push("|---------|------|--------|---------|-------|");
-      rsc.routeTree.forEach(r => {
-        lines.push(`| ${r.segment || "/"} | ${r.page || "—"} | ${r.layout || "—"} | ${r.loading || "—"} | ${r.error || "—"} |`);
-      });
-    }
-    lines.push("\n---\n");
-  }
+  if (rsc) lines.push(renderRscPayloadSection(rsc));
 
   // ── Footer ──
   lines.push("");

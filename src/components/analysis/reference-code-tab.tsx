@@ -1,18 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { useAnalysisStore } from "@/store/analysis-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Code, Eye, Code2, Maximize2, Download } from "lucide-react";
+import { Eye, Code2, Maximize2, Download } from "lucide-react";
+import { useReferenceCodeView } from "./use-reference-code-view";
 
 export function ReferenceCodeTab() {
   const referenceCodeContent = useAnalysisStore((s) => s.referenceCodeContent);
   const codePreviewHtml = useAnalysisStore((s) => s.codePreviewHtml);
-  const [activeView, setActiveView] = useState<"code" | "preview">(
-    codePreviewHtml ? "preview" : "code",
-  );
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const { activeView, setActiveView, isFullscreen, toggleFullscreen, closeFullscreen } =
+    useReferenceCodeView(!!codePreviewHtml);
 
   const iframeSrcDoc = codePreviewHtml || "";
 
@@ -88,7 +86,7 @@ export function ReferenceCodeTab() {
               size="sm"
               variant="ghost"
               className="h-7 text-xs px-2 text-muted-foreground"
-              onClick={() => setIsFullscreen(!isFullscreen)}
+              onClick={toggleFullscreen}
               title="Toggle fullscreen"
             >
               <Maximize2 className="h-3 w-3" />
@@ -111,7 +109,7 @@ export function ReferenceCodeTab() {
                 size="sm"
                 variant="outline"
                 className="bg-black/80 text-white border-white/20"
-                onClick={() => setIsFullscreen(false)}
+                onClick={closeFullscreen}
               >
                 ✕ Close
               </Button>
