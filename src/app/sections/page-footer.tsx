@@ -1,4 +1,4 @@
-import { Leaf } from "lucide-react";
+import { Leaf } from 'lucide-react';
 
 export function PageFooter() {
   return (
@@ -10,7 +10,8 @@ export function PageFooter() {
             UX Analyzer
           </p>
           <p className="hidden sm:block">
-            Teardown · Deconstruction · Spec · Patterns · Reverse · Audit · Heuristics · Design System
+            Teardown · Deconstruction · Spec · Patterns · Reverse · Audit · Heuristics · Design
+            System
           </p>
         </div>
       </div>

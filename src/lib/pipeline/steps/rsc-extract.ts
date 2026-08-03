@@ -7,7 +7,7 @@
  * Only processes pages where rawHtml is available (from fetch-pages step).
  */
 
-import type { PipelineStep, RscExtractResult } from "../types";
+import type { PipelineStep, RscExtractResult } from '../types';
 import {
   detectNextJs,
   parseNextData,
@@ -18,12 +18,12 @@ import {
   parseRscChunks,
   detectClientDirectives,
   classifyServerComponents,
-} from "./rsc-extract-parsers";
-import { buildSummary } from "./rsc-extract-summary";
+} from './rsc-extract-parsers';
+import { buildSummary } from './rsc-extract-summary';
 
 export const rscExtractStep: PipelineStep = {
-  id: "rsc-extract",
-  label: "RSC Payload Extraction",
+  id: 'rsc-extract',
+  label: 'RSC Payload Extraction',
 
   async run(ctx) {
     // Skip if not requested or no pages with rawHtml
@@ -33,14 +33,14 @@ export const rscExtractStep: PipelineStep = {
 
     const pagesWithHtml = ctx.pageContents.filter((p) => p.rawHtml && !p.error);
     if (pagesWithHtml.length === 0) {
-      console.log("[rsc-extract] Skipped: no pages with raw HTML");
+      console.log('[rsc-extract] Skipped: no pages with raw HTML');
       return;
     }
 
     ctx.send({
-      type: "progress",
-      step: "rsc_extract",
-      message: "Извлекаю RSC payload из Next.js страниц...",
+      type: 'progress',
+      step: 'rsc_extract',
+      message: 'Извлекаю RSC payload из Next.js страниц...',
       progress: 0.93,
       analysisId: ctx.analysisId,
     });
@@ -64,17 +64,20 @@ export const rscExtractStep: PipelineStep = {
     }
 
     ctx.send({
-      type: "rsc_payload",
+      type: 'rsc_payload',
       content: result,
       analysisId: ctx.analysisId,
     });
 
     console.log(
-      "[rsc-extract] Done:",
-      result.isNextJs ? "Next.js detected" : "Not Next.js",
-      "— SC:", result.serverComponents.length,
-      "CC:", result.clientComponents.length,
-      "routes:", result.routeTree.length,
+      '[rsc-extract] Done:',
+      result.isNextJs ? 'Next.js detected' : 'Not Next.js',
+      '— SC:',
+      result.serverComponents.length,
+      'CC:',
+      result.clientComponents.length,
+      'routes:',
+      result.routeTree.length,
     );
   },
 };
@@ -95,7 +98,7 @@ export function extractRscFromHtml(url: string, rawHtml: string): RscExtractResu
     metadata: null,
     fontPreloads: [],
     scriptPreloads: [],
-    summary: "",
+    summary: '',
   };
 
   if (!detectNextJs(rawHtml)) {

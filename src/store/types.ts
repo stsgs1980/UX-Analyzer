@@ -137,7 +137,13 @@ export interface AnalysisResult {
     isNextJs: boolean;
     serverComponents: string[];
     clientComponents: string[];
-    routeTree: Array<{ segment: string; page: string; layout: string; loading: string; error: string }>;
+    routeTree: Array<{
+      segment: string;
+      page: string;
+      layout: string;
+      loading: string;
+      error: string;
+    }>;
     summary: string;
     metadata: Record<string, string> | null;
     fontPreloads: string[];

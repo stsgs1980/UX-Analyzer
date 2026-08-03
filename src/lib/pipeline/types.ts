@@ -4,8 +4,7 @@
  * Steps are composed by runPipeline() in runner.ts.
  */
 
-import type { VlmAnalysisResult } from "@/lib/vlm-prompt";
-import type { SourceAdapter, SourceMetadata } from "@/lib/source-adapters/types";
+import type { VlmAnalysisResult } from '@/lib/vlm-prompt';
 
 export type { VlmAnalysisResult };
 
@@ -15,15 +14,10 @@ export interface PipelineContext {
   urls: string[];
   imageBase64?: string;
   imageFileName?: string;
-
-  // ── Source adapter (replaces scattered booleans) ──
-  adapter: SourceAdapter;
-  sourceType: string;
-
-  // ── Derived convenience flags (computed from adapter, for backward compat) ──
   hasImageUpload: boolean;
   hasUrls: boolean;
   pinterestSource: boolean;
+  sourceType: 'url' | 'pinterest' | 'upload';
 
   // ── AI providers (set during init step) ──
   zai: any;
@@ -39,13 +33,6 @@ export interface PipelineContext {
   designMdContent: string | null;
   techFingerprintsText: string | null;
   dataSources: string[];
-  metadata: SourceMetadata | null;
-
-  // ── Source code (from code adapters) ──
-  sourceCode: string | null;
-  sourceCodeLanguage: string | null;
-
-  // ── Pinterest data (legacy, kept for backward compat in analysis results) ──
   pinterestData: { title: string; authorName: string; thumbnailUrl: string } | null;
 
   // ── Options (from user input) ──
@@ -70,10 +57,6 @@ export interface PipelineContext {
 
   // ── SSE helpers (set before pipeline starts) ──
   send: (data: Record<string, unknown>) => void;
-
-  // ── Adapter result (populated by adapter-fetch step) ──
-  /** Description string used by LLM prompts (e.g. "Pinterest: title by author") */
-  sourceDescription: string;
 }
 
 export interface PageContent {
@@ -112,9 +95,6 @@ export interface SearchResult {
   title: string;
   snippet: string;
 }
-
-
-
 
 /**
  * A single pipeline step — pure function receiving shared context.

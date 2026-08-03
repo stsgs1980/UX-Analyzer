@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useAnalysisStore, type AnalysisResult } from "@/store/analysis-store";
-import { Badge } from "@/components/ui/badge";
-import { Server, FileCode, Layout, Loader, FolderTree, ALargeSmall } from "lucide-react";
+import { useAnalysisStore, type AnalysisResult } from '@/store/analysis-store';
+import { Badge } from '@/components/ui/badge';
+import { Server, FileCode, Layout, Loader, FolderTree, ALargeSmall } from 'lucide-react';
 
 interface RscPayloadData {
   isNextJs: boolean;
@@ -27,7 +27,8 @@ export function RscPayloadTab() {
   if (!rscPayloadContent) {
     return (
       <div className="text-sm text-muted-foreground py-4">
-        RSC payload не был извлечён. Включите галочку &laquo;RSC Extract&raquo; перед запуском анализа URL.
+        RSC payload не был извлечён. Включите галочку &laquo;RSC Extract&raquo; перед запуском
+        анализа URL.
       </div>
     );
   }
@@ -50,11 +51,11 @@ export function RscPayloadTab() {
           variant="outline"
           className={
             data.isNextJs
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-              : "bg-red-500/10 text-red-400 border-red-500/30"
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              : 'bg-red-500/10 text-red-400 border-red-500/30'
           }
         >
-          {data.isNextJs ? "Next.js Detected" : "Not Next.js"}
+          {data.isNextJs ? 'Next.js Detected' : 'Not Next.js'}
         </Badge>
         {data.isNextJs && (
           <>
@@ -96,7 +97,11 @@ export function RscPayloadTab() {
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {data.clientComponents.map((comp, i) => (
-              <Badge key={i} variant="outline" className="text-xs font-mono bg-amber-500/5 border-amber-500/20">
+              <Badge
+                key={i}
+                variant="outline"
+                className="text-xs font-mono bg-amber-500/5 border-amber-500/20"
+              >
                 {comp}
               </Badge>
             ))}
@@ -115,10 +120,16 @@ export function RscPayloadTab() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">Segment</th>
+                  <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">
+                    Segment
+                  </th>
                   <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">Page</th>
-                  <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">Layout</th>
-                  <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">Loading</th>
+                  <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">
+                    Layout
+                  </th>
+                  <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">
+                    Loading
+                  </th>
                   <th className="text-left py-1.5 px-3 text-muted-foreground font-medium">Error</th>
                 </tr>
               </thead>
@@ -126,10 +137,18 @@ export function RscPayloadTab() {
                 {data.routeTree.map((route, i) => (
                   <tr key={i} className="border-b border-white/3 last:border-0">
                     <td className="py-1.5 px-3 font-mono text-emerald-400">{route.segment}</td>
-                    <td className="py-1.5 px-3 font-mono text-muted-foreground">{route.page || "—"}</td>
-                    <td className="py-1.5 px-3 font-mono text-muted-foreground">{route.layout || "—"}</td>
-                    <td className="py-1.5 px-3 font-mono text-muted-foreground">{route.loading || "—"}</td>
-                    <td className="py-1.5 px-3 font-mono text-muted-foreground">{route.error || "—"}</td>
+                    <td className="py-1.5 px-3 font-mono text-muted-foreground">
+                      {route.page || '—'}
+                    </td>
+                    <td className="py-1.5 px-3 font-mono text-muted-foreground">
+                      {route.layout || '—'}
+                    </td>
+                    <td className="py-1.5 px-3 font-mono text-muted-foreground">
+                      {route.loading || '—'}
+                    </td>
+                    <td className="py-1.5 px-3 font-mono text-muted-foreground">
+                      {route.error || '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -165,8 +184,12 @@ export function RscPayloadTab() {
           </h4>
           <div className="flex flex-wrap gap-1.5">
             {data.fontPreloads.map((font, i) => (
-              <Badge key={i} variant="outline" className="text-xs font-mono bg-pink-500/5 border-pink-500/20">
-                {font.length > 40 ? font.substring(0, 40) + "..." : font}
+              <Badge
+                key={i}
+                variant="outline"
+                className="text-xs font-mono bg-pink-500/5 border-pink-500/20"
+              >
+                {font.length > 40 ? font.substring(0, 40) + '...' : font}
               </Badge>
             ))}
           </div>

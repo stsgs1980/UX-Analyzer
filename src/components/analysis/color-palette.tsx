@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { Copy, Check } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useColorCopy, usePaletteTabs } from "./use-color-palette-expanded";
+import { Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useColorCopy, usePaletteTabs } from './use-color-palette-expanded';
 
 interface ColorSwatchProps {
   hex: string;
@@ -21,16 +21,18 @@ function ColorSwatch({ hex, name, usage, percentage }: ColorSwatchProps) {
 
   return (
     <div className="group flex items-center gap-3 border-b border-white/5 py-2.5">
-          <button
-            onClick={handleCopy}
-            className="shrink-0 w-10 h-10 border border-white/10 flex items-center justify-center transition-all duration-200 hover:scale-105 hover:border-white/20 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none"
-            style={{ backgroundColor: hex }}
-            title={`Копировать ${hex}`}
-          >
+      <button
+        onClick={handleCopy}
+        className="shrink-0 w-10 h-10 border border-white/10 flex items-center justify-center transition-all duration-200 hover:scale-105 hover:border-white/20 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none"
+        style={{ backgroundColor: hex }}
+        title={`Копировать ${hex}`}
+      >
         {copied ? (
-          <Check className={`h-3.5 w-3.5 ${isLight ? "text-black/60" : "text-white/60"}`} />
+          <Check className={`h-3.5 w-3.5 ${isLight ? 'text-black/60' : 'text-white/60'}`} />
         ) : (
-          <span className={`text-[10px] font-mono ${isLight ? "text-black/50" : "text-white/50"}`}>{" "}</span>
+          <span className={`text-[10px] font-mono ${isLight ? 'text-black/50' : 'text-white/50'}`}>
+            {' '}
+          </span>
         )}
       </button>
       <div className="flex-1 min-w-0">
@@ -54,7 +56,7 @@ function ColorSwatch({ hex, name, usage, percentage }: ColorSwatchProps) {
 }
 
 function isLightColor(hex: string): boolean {
-  const c = hex.replace("#", "");
+  const c = hex.replace('#', '');
   const r = parseInt(c.substring(0, 2), 16);
   const g = parseInt(c.substring(2, 4), 16);
   const b = parseInt(c.substring(4, 6), 16);
@@ -84,21 +86,21 @@ export function ColorPalette({ colors }: ColorPaletteProps) {
   if (!colors) return null;
 
   const handleExportCss = () => {
-    const lines = [":root {"];
+    const lines = [':root {'];
     const addVar = (name: string, hex?: string) => {
       if (hex) lines.push(`  --color-${name}: ${hex};`);
     };
-    addVar("primary", colors.primary?.[0]);
-    addVar("primary-foreground", colors.primary?.[1]);
-    addVar("secondary", colors.secondary?.[0]);
-    addVar("secondary-foreground", colors.secondary?.[1]);
-    addVar("accent", colors.accent?.[0]);
-    addVar("background", colors.background?.[0]);
-    addVar("foreground", colors.text?.[0]);
-    addVar("muted-foreground", colors.text?.[1]);
-    lines.push("}");
-    navigator.clipboard.writeText(lines.join("\n"));
-    toast.success("CSS Variables скопированы");
+    addVar('primary', colors.primary?.[0]);
+    addVar('primary-foreground', colors.primary?.[1]);
+    addVar('secondary', colors.secondary?.[0]);
+    addVar('secondary-foreground', colors.secondary?.[1]);
+    addVar('accent', colors.accent?.[0]);
+    addVar('background', colors.background?.[0]);
+    addVar('foreground', colors.text?.[0]);
+    addVar('muted-foreground', colors.text?.[1]);
+    lines.push('}');
+    navigator.clipboard.writeText(lines.join('\n'));
+    toast.success('CSS Variables скопированы');
   };
 
   const handleExportTailwind = () => {
@@ -113,21 +115,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ${entries.join(",\n        ")}
+        ${entries.join(',\n        ')}
       }
     }
   }
 };`;
     navigator.clipboard.writeText(config);
-    toast.success("Tailwind config скопирован");
+    toast.success('Tailwind config скопирован');
   };
 
   const allGroupColors = [
-    ...(colors.primary?.map((c) => ({ hex: c, group: "Primary" })) || []),
-    ...(colors.secondary?.map((c) => ({ hex: c, group: "Secondary" })) || []),
-    ...(colors.accent?.map((c) => ({ hex: c, group: "Accent" })) || []),
-    ...(colors.background?.map((c) => ({ hex: c, group: "Background" })) || []),
-    ...(colors.text?.map((c) => ({ hex: c, group: "Text" })) || []),
+    ...(colors.primary?.map((c) => ({ hex: c, group: 'Primary' })) || []),
+    ...(colors.secondary?.map((c) => ({ hex: c, group: 'Secondary' })) || []),
+    ...(colors.accent?.map((c) => ({ hex: c, group: 'Accent' })) || []),
+    ...(colors.background?.map((c) => ({ hex: c, group: 'Background' })) || []),
+    ...(colors.text?.map((c) => ({ hex: c, group: 'Text' })) || []),
   ];
 
   return (
@@ -136,22 +138,22 @@ module.exports = {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex gap-1">
           <button
-            onClick={() => setActiveTab("dominant")}
+            onClick={() => setActiveTab('dominant')}
             className={`text-xs px-3 py-1.5 border transition-all duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
-              activeTab === "dominant"
-                ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
-                : "border-white/8 text-muted-foreground hover:text-foreground"
+              activeTab === 'dominant'
+                ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/5'
+                : 'border-white/8 text-muted-foreground hover:text-foreground'
             }`}
           >
             Dominant
           </button>
           {allGroupColors.length > 0 && (
             <button
-              onClick={() => setActiveTab("groups")}
+              onClick={() => setActiveTab('groups')}
               className={`text-xs px-3 py-1.5 border transition-all duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
-                activeTab === "groups"
-                  ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
-                  : "border-white/8 text-muted-foreground hover:text-foreground"
+                activeTab === 'groups'
+                  ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/5'
+                  : 'border-white/8 text-muted-foreground hover:text-foreground'
               }`}
             >
               Groups
@@ -163,7 +165,12 @@ module.exports = {
             <Copy className="h-3 w-3 mr-1" />
             CSS
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportTailwind} className="text-xs h-7">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportTailwind}
+            className="text-xs h-7"
+          >
             <Copy className="h-3 w-3 mr-1" />
             Tailwind
           </Button>
@@ -171,15 +178,21 @@ module.exports = {
       </div>
 
       {/* Color swatches */}
-      {activeTab === "dominant" && colors.dominantColors && (
+      {activeTab === 'dominant' && colors.dominantColors && (
         <div>
           {colors.dominantColors.map((c, i) => (
-            <ColorSwatch key={i} hex={c.hex} name={c.name} usage={c.usage} percentage={c.percentage} />
+            <ColorSwatch
+              key={i}
+              hex={c.hex}
+              name={c.name}
+              usage={c.usage}
+              percentage={c.percentage}
+            />
           ))}
         </div>
       )}
 
-      {activeTab === "groups" && (
+      {activeTab === 'groups' && (
         <div>
           {allGroupColors.map((c, i) => (
             <ColorSwatch key={i} hex={c.hex} name={c.group} />

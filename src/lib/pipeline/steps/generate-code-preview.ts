@@ -4,9 +4,9 @@
  * Populates: ctx.codePreviewHtml
  */
 
-import type { PipelineContext } from "../types";
-import { localProvider } from "@/lib/gemini-provider";
-import { llmWithFallback } from "../helpers";
+import type { PipelineContext } from '../types';
+import { localProvider } from '@/lib/gemini-provider';
+import { llmWithFallback } from '../helpers';
 
 /**
  * Collect code snippets from reference data phases.
@@ -17,7 +17,7 @@ function collectCodeSnippets(referenceData: Record<string, unknown>): string[] {
     for (const phase of referenceData.phases as Array<Record<string, unknown>>) {
       if (Array.isArray(phase.steps)) {
         for (const step of phase.steps as Array<Record<string, unknown>>) {
-          if (step.code && typeof step.code === "string" && step.code.length > 20) {
+          if (step.code && typeof step.code === 'string' && step.code.length > 20) {
             codeSnippets.push(step.code);
           }
         }
@@ -34,19 +34,23 @@ function extractDesignTokens(referenceData: Record<string, unknown>): string {
   const designTokens = referenceData.designTokens as Record<string, unknown> | undefined;
   return designTokens?.cssVariables
     ? String(designTokens.cssVariables)
-    : ":root { --primary: #10b981; --bg: #000; --text: #fff; }";
+    : ':root { --primary: #10b981; --bg: #000; --text: #fff; }';
 }
 
 /**
  * Build the prompt for HTML preview generation.
  */
-function buildCodePreviewPrompt(sourceDescription: string, tokensStr: string, codeSnippets: string[]): string {
+function buildCodePreviewPrompt(
+  sourceDescription: string,
+  tokensStr: string,
+  codeSnippets: string[],
+): string {
   return `Ты — senior frontend-разработчик. На основе сгенерированного reference implementation pipeline создай ОДИН самодостаточный HTML файл, который визуально демонстрирует ключевой компонент дизайна.
 
 ## Исходные данные
 - Источник: ${sourceDescription}
 - Design Tokens (CSS Variables):\n${tokensStr}
-- Код компонентов из pipeline:\n${codeSnippets.slice(0, 5).join("\n\n---\n\n")}
+- Код компонентов из pipeline:\n${codeSnippets.slice(0, 5).join('\n\n---\n\n')}
 
 ## Требования к HTML
 
@@ -68,9 +72,12 @@ function buildCodePreviewPrompt(sourceDescription: string, tokensStr: string, co
  * Sanitize HTML preview text: strip markdown wrappers and block dangerous parent/top access.
  */
 function sanitizeHtmlPreview(htmlText: string): string {
-  let html = htmlText.replace(/^```html?\n?/i, "").replace(/\n?```$/i, "").trim();
-  html = html.replace(/window\.parent/gi, "/* blocked */");
-  html = html.replace(/window\.top/gi, "/* blocked */");
+  let html = htmlText
+    .replace(/^```html?\n?/i, '')
+    .replace(/\n?```$/i, '')
+    .trim();
+  html = html.replace(/window\.parent/gi, '/* blocked */');
+  html = html.replace(/window\.top/gi, '/* blocked */');
   return html;
 }
 
@@ -85,9 +92,9 @@ export async function generateCodePreview(
   sourceDescription: string,
 ): Promise<void> {
   ctx.send({
-    type: "progress",
-    step: "code_preview",
-    message: "Генерирую live preview кода...",
+    type: 'progress',
+    step: 'code_preview',
+    message: 'Генерирую live preview кода...',
     progress: 0.935,
     analysisId: ctx.analysisId,
   });
@@ -97,7 +104,7 @@ export async function generateCodePreview(
 
   // If we have no code snippets, skip preview
   if (codeSnippets.length === 0) {
-    console.log("[code-preview] No code snippets found, skipping preview generation");
+    console.log('[code-preview] No code snippets found, skipping preview generation');
     return;
   }
 
@@ -108,36 +115,36 @@ export async function generateCodePreview(
       localProvider,
       ctx.primaryZai,
       {
-        messages: [{ role: "user", content: previewPrompt }],
-        thinking: { type: "disabled" },
+        messages: [{ role: 'user', content: previewPrompt }],
+        thinking: { type: 'disabled' },
       },
       90000,
-      "Code preview generation",
+      'Code preview generation',
       ctx.aiProviderRef,
     );
 
-    let htmlText = (completion as any)?.choices?.[0]?.message?.content || "";
+    let htmlText = (completion as any)?.choices?.[0]?.message?.content || '';
     htmlText = sanitizeHtmlPreview(htmlText);
 
-    if (!htmlText.startsWith("<!DOCTYPE") && !htmlText.startsWith("<html")) {
-      console.warn("[code-preview] Response is not valid HTML, skipping");
+    if (!htmlText.startsWith('<!DOCTYPE') && !htmlText.startsWith('<html')) {
+      console.warn('[code-preview] Response is not valid HTML, skipping');
       return;
     }
 
     ctx.codePreviewHtml = htmlText;
 
     ctx.send({
-      type: "code_preview",
+      type: 'code_preview',
       content: htmlText,
       analysisId: ctx.analysisId,
     });
 
-    console.log("[code-preview] Generated HTML preview, length:", htmlText.length);
+    console.log('[code-preview] Generated HTML preview, length:', htmlText.length);
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
-    console.warn("[code-preview] Failed:", errMsg);
+    console.warn('[code-preview] Failed:', errMsg);
     ctx.send({
-      type: "warn",
+      type: 'warn',
       message: `Live preview не сгенерирован: ${errMsg}`,
       analysisId: ctx.analysisId,
     });

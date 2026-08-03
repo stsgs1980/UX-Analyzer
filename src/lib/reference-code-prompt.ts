@@ -1,5 +1,5 @@
-import type { VlmAnalysisResult } from "./vlm-prompt";
-import { fewShotExamples } from "./few-shot-examples";
+import type { VlmAnalysisResult } from './vlm-prompt';
+import { fewShotExamples } from './few-shot-examples';
 
 /**
  * Build a prompt for LLM to generate a Reference Implementation Pipeline
@@ -9,7 +9,7 @@ export function buildReferenceCodePrompt(
   analysisResult: Record<string, unknown>,
   vlmResult: VlmAnalysisResult | null,
   designMdContent: string | null,
-  sourceDescription: string
+  sourceDescription: string,
 ): string {
   // Extract key fields from analysis result
   const teardown = analysisResult.teardown as Record<string, unknown> | undefined;
@@ -24,19 +24,19 @@ export function buildReferenceCodePrompt(
 ## Исходный анализ
 
 ### Teardown
-${teardown ? JSON.stringify(teardown, null, 2) : "Нет данных"}
+${teardown ? JSON.stringify(teardown, null, 2) : 'Нет данных'}
 
 ### Reverse Engineering
-${reverse ? JSON.stringify(reverse, null, 2) : "Нет данных"}
+${reverse ? JSON.stringify(reverse, null, 2) : 'Нет данных'}
 
 ### Deconstruction
-${deconstruction ? JSON.stringify(deconstruction, null, 2) : "Нет данных"}
+${deconstruction ? JSON.stringify(deconstruction, null, 2) : 'Нет данных'}
 
 ### Audit
-${audit ? JSON.stringify(audit, null, 2) : "Нет данных"}
+${audit ? JSON.stringify(audit, null, 2) : 'Нет данных'}
 
 ### Heuristic Evaluation
-${heuristics ? JSON.stringify(heuristics, null, 2) : "Нет данных"}
+${heuristics ? JSON.stringify(heuristics, null, 2) : 'Нет данных'}
 `;
 
   if (vlmResult) {
@@ -54,7 +54,7 @@ ${designMdContent.substring(0, 3000)}
   }
 
   // Append few-shot examples (imported from separate module to avoid backtick conflicts)
-  prompt += "\n\n---\n\n" + fewShotExamples + "\n\n---\n\n";
+  prompt += '\n\n---\n\n' + fewShotExamples + '\n\n---\n\n';
 
   prompt += `## Формат вывода
 

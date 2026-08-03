@@ -87,7 +87,7 @@ export interface VlmAnalysisResult {
       name: string;
       usage: string;
       percentage: number;
-    }>
+    }>;
   };
   typography?: {
     headings?: { style: string; weight: string; characteristics: string };

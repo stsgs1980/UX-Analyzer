@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
 export async function GET() {
   if (!db) return NextResponse.json([]);
 
   try {
     const analyses = await db.analysis.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: 100,
     });
 
@@ -15,7 +15,7 @@ export async function GET() {
     for (const a of analyses) {
       try {
         const urls: string[] = JSON.parse(a.urls);
-        const key = [...urls].sort().join("::");
+        const key = [...urls].sort().join('::');
         if (!seen.has(key)) {
           seen.set(key, a);
         }
@@ -37,43 +37,44 @@ export async function GET() {
         createdAt: a.createdAt,
         hasResult: !!a.result,
         sourceType: a.sourceType,
-      }))
+      })),
     );
   } catch (error) {
-    console.error("Failed to fetch analyses:", error);
+    console.error('Failed to fetch analyses:', error);
     return NextResponse.json([]);
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  if (!db) return NextResponse.json({ success: false, error: "База данных недоступна" }, { status: 503 });
+  if (!db)
+    return NextResponse.json({ success: false, error: 'База данных недоступна' }, { status: 503 });
 
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
 
     if (id) {
       // Validate ID format (cuid) to prevent injection
       if (!/^[a-z0-9]{10,30}$/.test(id)) {
-        return NextResponse.json({ error: "Некорректный ID" }, { status: 400 });
+        return NextResponse.json({ error: 'Некорректный ID' }, { status: 400 });
       }
       await db.analysis.delete({ where: { id } });
       return NextResponse.json({ success: true });
     }
 
     // H1: deleteMany (clear all) requires explicit confirm=true query param
-    const confirmAll = searchParams.get("confirm");
-    if (confirmAll !== "true") {
-      return NextResponse.json({ error: "Для полной очистки необходим параметр ?confirm=true" }, { status: 400 });
+    const confirmAll = searchParams.get('confirm');
+    if (confirmAll !== 'true') {
+      return NextResponse.json(
+        { error: 'Для полной очистки необходим параметр ?confirm=true' },
+        { status: 400 },
+      );
     }
 
     const count = await db.analysis.deleteMany({});
     return NextResponse.json({ success: true, deleted: count.count });
   } catch (error) {
-    console.error("Failed to delete analysis:", error);
-    return NextResponse.json(
-      { error: "Не удалось удалить" },
-      { status: 500 }
-    );
+    console.error('Failed to delete analysis:', error);
+    return NextResponse.json({ error: 'Не удалось удалить' }, { status: 500 });
   }
 }

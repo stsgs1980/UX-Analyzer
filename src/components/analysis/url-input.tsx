@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useAnalysisStore } from "@/store/analysis-store";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { X, Plus, Link, Loader2, Sparkles, ImagePlus } from "lucide-react";
-import { useCallback, type KeyboardEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ImageUploadButton, ImageUploadPreview } from "@/components/analysis/image-upload-section";
-import { AnalysisOptions } from "@/components/analysis/analysis-options";
+import { useAnalysisStore } from '@/store/analysis-store';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus, Link, Loader2, Sparkles, ImagePlus } from 'lucide-react';
+import { useCallback, type KeyboardEvent } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ImageUploadButton, ImageUploadPreview } from '@/components/analysis/image-upload-section';
+import { AnalysisOptions } from '@/components/analysis/analysis-options';
 
 export function UrlInput() {
   const {
@@ -32,12 +32,12 @@ export function UrlInput() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
+      if (e.key === 'Enter') {
         e.preventDefault();
         addUrl(e.currentTarget.value);
       }
     },
-    [addUrl]
+    [addUrl],
   );
 
   const hasInput = urls.length > 0 || !!imageBase64;
@@ -46,8 +46,13 @@ export function UrlInput() {
     <div className="space-y-4">
       <div className="flex gap-2">
         <div className="relative flex-1 group">
-          <label htmlFor="url-input" className="sr-only">URL продукта</label>
-          <Link className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-400 transition-colors" aria-hidden="true" />
+          <label htmlFor="url-input" className="sr-only">
+            URL продукта
+          </label>
+          <Link
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-400 transition-colors"
+            aria-hidden="true"
+          />
           <Input
             id="url-input"
             value={inputUrl}
@@ -85,7 +90,7 @@ export function UrlInput() {
         {urls.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="flex flex-wrap gap-2 overflow-hidden"
           >
@@ -132,19 +137,19 @@ export function UrlInput() {
       <div className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-4">
           <p className="text-sm text-muted-foreground/60 font-mono">
-          {imageBase64 ? (
-            <span className="text-emerald-400/80">
-              <ImagePlus className="h-3 w-3 inline mr-1" />
-              {imageFileName || "Изображение загружено"}
-            </span>
-          ) : urls.length === 0 ? (
-            "URL или загрузите изображение"
-          ) : (
-            <span>
-              <span className="text-emerald-400/80 font-semibold">{urls.length}</span>{" "}
-              <span className="text-muted-foreground/40">/ 10 URL</span>
-            </span>
-          )}
+            {imageBase64 ? (
+              <span className="text-emerald-400/80">
+                <ImagePlus className="h-3 w-3 inline mr-1" />
+                {imageFileName || 'Изображение загружено'}
+              </span>
+            ) : urls.length === 0 ? (
+              'URL или загрузите изображение'
+            ) : (
+              <span>
+                <span className="text-emerald-400/80 font-semibold">{urls.length}</span>{' '}
+                <span className="text-muted-foreground/40">/ 10 URL</span>
+              </span>
+            )}
           </p>
           <AnalysisOptions
             isAnalyzing={isAnalyzing}

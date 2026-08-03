@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Eye } from "lucide-react";
+import Link from 'next/link';
+import { Eye } from 'lucide-react';
 
 export function PageHeader() {
   return (
@@ -10,10 +10,16 @@ export function PageHeader() {
           <span className="text-sm font-medium tracking-tight">UX Analyzer</span>
         </Link>
         <nav className="flex items-center gap-6">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             Анализ
           </Link>
-          <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/history"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             История
           </Link>
         </nav>

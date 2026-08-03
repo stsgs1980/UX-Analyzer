@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Code, Server } from "lucide-react";
+import { Code, Server } from 'lucide-react';
 
 interface AnalysisOptionsProps {
   isAnalyzing: boolean;

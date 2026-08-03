@@ -1,16 +1,29 @@
-import type { AnalysisResult } from "./types";
+import type { AnalysisResult } from './types';
 
-const STORAGE_KEY = "ux-analyzer:last-result";
+const STORAGE_KEY = 'ux-analyzer:last-result';
 
-export function persistResult(result: AnalysisResult | null, analysisId: string | null, designMd: string | null) {
-  if (typeof window === "undefined" || !result) return;
+export function persistResult(
+  result: AnalysisResult | null,
+  analysisId: string | null,
+  designMd: string | null,
+) {
+  if (typeof window === 'undefined' || !result) return;
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ result, analysisId, designMd, ts: Date.now() }));
-  } catch { /* quota exceeded — ignore */ }
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ result, analysisId, designMd, ts: Date.now() }),
+    );
+  } catch {
+    /* quota exceeded — ignore */
+  }
 }
 
-export function restoreResult(): { result: AnalysisResult; analysisId: string; designMd: string | null } | null {
-  if (typeof window === "undefined") return null;
+export function restoreResult(): {
+  result: AnalysisResult;
+  analysisId: string;
+  designMd: string | null;
+} | null {
+  if (typeof window === 'undefined') return null;
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -27,6 +40,8 @@ export function restoreResult(): { result: AnalysisResult; analysisId: string; d
 }
 
 export function clearPersistedResult() {
-  if (typeof window === "undefined") return;
-  try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }

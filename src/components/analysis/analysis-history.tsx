@@ -1,14 +1,20 @@
-"use client";
+'use client';
 
-import { useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { useAnalysisStore } from "@/store/analysis-store";
-import { CheckCircle, XCircle, Clock, X, RotateCcw } from "lucide-react";
-import { getSourceTypeInfo, isRerunnable } from "@/lib/source-type-icons";
-import { toast } from "sonner";
+import { useRef, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { useAnalysisStore } from '@/store/analysis-store';
+import { CheckCircle, XCircle, Clock, Globe, X, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function AnalysisHistory() {
-  const { history, loadAnalysis, setUrlsFromHistory, deleteHistoryItem, clearAllHistory, rerunAnalysis } = useAnalysisStore();
+  const {
+    history,
+    loadAnalysis,
+    setUrlsFromHistory,
+    deleteHistoryItem,
+    clearAllHistory,
+    rerunAnalysis,
+  } = useAnalysisStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Scroll-reveal for history items
@@ -20,15 +26,15 @@ export function AnalysisHistory() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("revealed");
+            entry.target.classList.add('revealed');
             observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.05, rootMargin: "0px 0px -20px 0px" }
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' },
     );
 
-    const items = container.querySelectorAll("[data-reveal]");
+    const items = container.querySelectorAll('[data-reveal]');
     items.forEach((el, i) => {
       (el as HTMLElement).style.transitionDelay = `${i * 0.05}s`;
       observer.observe(el);
@@ -41,14 +47,14 @@ export function AnalysisHistory() {
     (e: { stopPropagation: () => void }, id: string) => {
       e.stopPropagation();
       deleteHistoryItem(id);
-      toast.success("Анализ удалён");
+      toast.success('Анализ удалён');
     },
-    [deleteHistoryItem]
+    [deleteHistoryItem],
   );
 
   const handleClearAll = useCallback(() => {
     clearAllHistory();
-    toast.success("История очищена");
+    toast.success('История очищена');
   }, [clearAllHistory]);
 
   if (history.length === 0) return null;
@@ -60,17 +66,17 @@ export function AnalysisHistory() {
     const diffMin = Math.floor(diffMs / 60000);
     const diffHr = Math.floor(diffMs / 3600000);
 
-    if (diffMin < 1) return "только что";
+    if (diffMin < 1) return 'только что';
     if (diffMin < 60) return `${diffMin} мин назад`;
     if (diffHr < 24) return `${diffHr} ч назад`;
-    return date.toLocaleDateString("ru-RU");
+    return date.toLocaleDateString('ru-RU');
   };
 
   const domainFromUrl = (url: string) => {
     try {
-      return new URL(url).hostname.replace(/^www\./, "");
+      return new URL(url).hostname.replace(/^www\./, '');
     } catch {
-      return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     }
   };
 
@@ -81,9 +87,7 @@ export function AnalysisHistory() {
           История анализов
         </h3>
         <span className="h-px flex-1 bg-white/5" />
-        <span className="text-xs text-muted-foreground/40 tabular-nums">
-          {history.length}
-        </span>
+        <span className="text-xs text-muted-foreground/40 tabular-nums">{history.length}</span>
         <button
           onClick={handleClearAll}
           className="text-[10px] uppercase tracking-widest text-muted-foreground/30 hover:text-red-400/70 transition-colors duration-300 cursor-default"
@@ -95,14 +99,14 @@ export function AnalysisHistory() {
 
       <div ref={containerRef} className="divide-y divide-white/5">
         {history.map((item, i) => {
-          const domain = domainFromUrl(item.urls[0] || "");
-          const isCompleted = item.status === "completed";
-          const isError = item.status === "error";
+          const domain = domainFromUrl(item.urls[0] || '');
+          const isCompleted = item.status === 'completed';
+          const isError = item.status === 'error';
           const accentColor = isCompleted
-            ? "border-l-emerald-500/50 hover:border-l-emerald-400"
+            ? 'border-l-emerald-500/50 hover:border-l-emerald-400'
             : isError
-            ? "border-l-red-500/50 hover:border-l-red-400"
-            : "border-l-muted-foreground/30 hover:border-l-muted-foreground/60";
+              ? 'border-l-red-500/50 hover:border-l-red-400'
+              : 'border-l-muted-foreground/30 hover:border-l-muted-foreground/60';
 
           return (
             <motion.button
@@ -125,21 +129,42 @@ export function AnalysisHistory() {
                 )}
               </div>
 
-              {/* Source type icon + Domain */}
-              <SourceIconWithInfo sourceType={item.sourceType} domain={domain} urlCount={item.urls.length} />
+              {/* Domain */}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <Globe className="h-3 w-3 text-muted-foreground/30 shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <span className="text-sm font-medium truncate text-foreground/70 group-hover:text-foreground transition-colors duration-300">
+                  {domain || '—'}
+                </span>
+                {item.urls.length > 1 && (
+                  <span className="text-[11px] text-emerald-400/50 font-medium shrink-0 group-hover:text-emerald-400/80 transition-colors">
+                    +{item.urls.length - 1}
+                  </span>
+                )}
+              </div>
 
               {/* Time */}
               <span className="text-[11px] text-muted-foreground/40 shrink-0 tabular-nums group-hover:text-muted-foreground/60 transition-colors">
                 {formatDate(item.createdAt)}
               </span>
 
-              {/* Re-run — visible on hover, only for re-runnable source types */}
-              {isRerunnable(item.sourceType) && (
+              {/* Re-run — visible on hover, only for URL-based analyses */}
+              {(item.sourceType === 'url' || item.sourceType === 'pinterest') && (
                 <span
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); rerunAnalysis(item.id); toast.success("Переанализ запущен"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); rerunAnalysis(item.id); toast.success("Переанализ запущен"); } }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    rerunAnalysis(item.id);
+                    toast.success('Переанализ запущен');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      rerunAnalysis(item.id);
+                      toast.success('Переанализ запущен');
+                    }
+                  }}
                   className="shrink-0 p-1 text-transparent group-hover:text-muted-foreground/30 hover:!text-amber-400 transition-colors duration-200 cursor-pointer"
                   aria-label={`Переанализировать ${domain}`}
                   title="Переанализировать"
@@ -153,7 +178,12 @@ export function AnalysisHistory() {
                 role="button"
                 tabIndex={0}
                 onClick={(e) => handleDelete(e, item.id)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleDelete(e, item.id); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleDelete(e, item.id);
+                  }
+                }}
                 className="shrink-0 p-1 text-transparent group-hover:text-muted-foreground/30 hover:!text-red-400 transition-colors duration-200 cursor-pointer"
                 aria-label={`Удалить ${domain}`}
               >
@@ -163,25 +193,6 @@ export function AnalysisHistory() {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-/** Small helper component to render source type icon inline */
-function SourceIconWithInfo({ sourceType, domain, urlCount }: { sourceType?: string; domain: string; urlCount: number }) {
-  const info = getSourceTypeInfo(sourceType);
-  const Icon = info.icon;
-  return (
-    <div className="flex-1 min-w-0 flex items-center gap-2">
-      <Icon className={`h-3 w-3 ${info.color} shrink-0 transition-transform duration-300 group-hover:scale-110`} />
-      <span className="text-sm font-medium truncate text-foreground/70 group-hover:text-foreground transition-colors duration-300">
-        {domain || "\u2014"}
-      </span>
-      {urlCount > 1 && (
-        <span className="text-[11px] text-emerald-400/50 font-medium shrink-0 group-hover:text-emerald-400/80 transition-colors">
-          +{urlCount - 1}
-        </span>
-      )}
     </div>
   );
 }

@@ -1,98 +1,113 @@
 /**
- * Step: Fetch source content via adapter.
- *
- * This step calls `ctx.adapter.fetch()` and populates the pipeline context
- * with images, metadata, source code, and additional pages.
- * Replaces the old source-type branching logic (pinterest oEmbed, image upload, direct image URL).
+ * Step: Fetch source content — pages, images, Pinterest pins.
+ * Handles: Pinterest oEmbed, uploaded images, direct image URLs.
+ * Populates: extractedImageBase64, extractedImageUrl, dataSources, pinterestData
  */
 
-import type { PipelineStep } from "../types";
+import type { PipelineStep } from '../types';
+import { withTimeout } from '../helpers';
+import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from '@/lib/pinterest';
+import { isImageUrlSafe } from '@/lib/url-safety';
 
 export const fetchSourceStep: PipelineStep = {
-  id: "fetch-source",
-  label: "Загрузка источника",
+  id: 'fetch-source',
+  label: 'Загрузка источника',
 
   async run(ctx) {
     const aid = ctx.analysisId;
 
-    // Build fetch context from pipeline context
-    const fetchCtx = {
-      urls: ctx.urls,
-      imageBase64: ctx.imageBase64,
-      imageFileName: ctx.imageFileName,
-      zai: ctx.zai,
-    };
+    // ── Pinterest oEmbed ──
+    if (ctx.pinterestSource && ctx.hasUrls) {
+      ctx.send({
+        type: 'progress',
+        step: 'pinterest',
+        message: 'Получаю данные пина из Pinterest...',
+        progress: 0.06,
+        analysisId: aid,
+      });
 
-    // Progress messages per adapter type
-    const messages: Record<string, string> = {
-      pinterest: "Получаю данные пина из Pinterest...",
-      "pinterest-board": "Получаю данные доски из Pinterest...",
-      image: ctx.imageBase64 ? "Изображение загружено, начинаю анализ..." : "Скачиваю изображение по URL...",
-      url: "Загружаю страницу для анализа...",
-      dribbble: "Получаю данные shot из Dribbble...",
-      behance: "Получаю данные проекта из Behance...",
-      codepen: "Получаю данные из CodePen...",
-      github: "Получаю данные репозитория из GitHub...",
-    };
-
-    const msg = messages[ctx.adapter.type] || "Загрузка источника...";
-    ctx.send({ type: "progress", step: "fetching", message: msg, progress: 0.06, analysisId: aid });
-
-    // Call adapter
-    const result = await ctx.adapter.fetch(fetchCtx);
-
-    // Populate pipeline context from adapter result
-
-    // Images → extractedImageBase64 (primary image for VLM)
-    if (result.images.length > 0) {
-      ctx.extractedImageBase64 = result.images[0].base64;
-      ctx.extractedImageUrl = result.images[0].url || null;
-    }
-
-    // Metadata
-    ctx.metadata = result.metadata;
-
-    // Build sourceDescription for LLM prompts
-    if (ctx.metadata) {
-      const parts: string[] = [];
-      if (ctx.adapter.type === "pinterest") {
-        parts.push("Pinterest:");
-        if (ctx.metadata.title) parts.push(ctx.metadata.title);
-        if (ctx.metadata.author) parts.push("by", ctx.metadata.author);
-        ctx.pinterestData = {
-          title: ctx.metadata.title,
-          authorName: ctx.metadata.author || "",
-          thumbnailUrl: ctx.metadata.thumbnailUrl || "",
-        };
-      } else if (ctx.adapter.type === "image") {
-        parts.push("Uploaded:");
-        parts.push(ctx.imageFileName || "image");
-      } else {
-        parts.push(ctx.metadata.title || ctx.urls[0] || "unknown");
+      for (const url of ctx.urls) {
+        if (isPinterestPin(url)) {
+          try {
+            const pinData = await withTimeout(fetchPinterestOembed(url), 8000, 'Pinterest oEmbed');
+            console.log(
+              '[pinterest] oEmbed result:',
+              pinData ? `OK (title: ${pinData.title})` : 'NULL',
+            );
+            if (pinData) {
+              ctx.pinterestData = {
+                title: pinData.title,
+                authorName: pinData.authorName,
+                thumbnailUrl: pinData.thumbnailUrl,
+              };
+              if (pinData.thumbnailUrl) {
+                ctx.send({
+                  type: 'progress',
+                  step: 'pinterest',
+                  message: `Скачиваю обложку: ${pinData.title || 'пин'}...`,
+                  progress: 0.1,
+                  analysisId: aid,
+                });
+                const imgBase64 = await withTimeout(
+                  downloadImageAsBase64(pinData.thumbnailUrl),
+                  15000,
+                  'Pinterest image',
+                );
+                if (imgBase64) {
+                  ctx.extractedImageBase64 = imgBase64;
+                  ctx.extractedImageUrl = pinData.thumbnailUrl;
+                  ctx.dataSources.push('pinterest');
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[pinterest] Failed:', e);
+          }
+          break;
+        }
       }
-      ctx.sourceDescription = parts.join(" ");
     }
 
-    // Source code (for code adapters)
-    if (result.sourceCode) {
-      ctx.sourceCode = result.sourceCode;
-      ctx.sourceCodeLanguage = result.sourceCodeLanguage || null;
+    // ── Uploaded image ──
+    if (ctx.hasImageUpload && ctx.imageBase64) {
+      ctx.send({
+        type: 'progress',
+        step: 'upload',
+        message: 'Изображение загружено, начинаю анализ...',
+        progress: 0.1,
+        analysisId: aid,
+      });
+      ctx.extractedImageBase64 = ctx.imageBase64;
+      ctx.dataSources.push('image_upload');
     }
 
-    // Additional pages from adapter
-    if (result.additionalPages && result.additionalPages.length > 0) {
-      ctx.pageContents.push(...result.additionalPages);
+    // ── Direct image URL ──
+    if (!ctx.extractedImageBase64 && ctx.hasUrls && !ctx.pinterestSource) {
+      const firstUrl = ctx.urls[0];
+      const isImageUrl = /\.(png|jpg|jpeg|gif|webp|svg|bmp|ico)(\?.*)?$/i.test(firstUrl);
+      if (isImageUrl && isImageUrlSafe(firstUrl)) {
+        ctx.send({
+          type: 'progress',
+          step: 'downloading_image',
+          message: 'Скачиваю изображение по URL...',
+          progress: 0.1,
+          analysisId: aid,
+        });
+        try {
+          const imgBase64 = await withTimeout(
+            downloadImageAsBase64(firstUrl),
+            15000,
+            'Image download',
+          );
+          if (imgBase64) {
+            ctx.extractedImageBase64 = imgBase64;
+            ctx.extractedImageUrl = firstUrl;
+            ctx.dataSources.push('image_url');
+          }
+        } catch (e) {
+          console.warn('[image] Download failed:', e);
+        }
+      }
     }
-
-    // Track data source
-    ctx.dataSources.push(ctx.adapter.type);
-
-    ctx.send({
-      type: "progress",
-      step: "fetched",
-      message: `Источник загружен: ${ctx.adapter.label}`,
-      progress: 0.10,
-      analysisId: aid,
-    });
   },
 };

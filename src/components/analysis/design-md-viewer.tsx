@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
-import { Button } from "@/components/ui/button";
-import { Copy, Download, FileText } from "lucide-react";
-import { toast } from "sonner";
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import { Button } from '@/components/ui/button';
+import { Copy, Download, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DesignMdViewerProps {
   content: string;
@@ -13,15 +13,15 @@ interface DesignMdViewerProps {
 export function DesignMdViewer({ content }: DesignMdViewerProps) {
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
-    toast.success("DESIGN.md скопирован в буфер");
+    toast.success('DESIGN.md скопирован в буфер');
   };
 
   const handleDownload = () => {
-    const blob = new Blob([content], { type: "text/markdown" });
+    const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "DESIGN.md";
+    a.download = 'DESIGN.md';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -44,7 +44,8 @@ export function DesignMdViewer({ content }: DesignMdViewerProps) {
       </div>
 
       {/* Markdown content - sanitized */}
-      <div className="prose prose-invert prose-sm max-w-none
+      <div
+        className="prose prose-invert prose-sm max-w-none
         prose-headings:text-foreground prose-headings:font-bold prose-headings:tracking-[-0.04em]
         prose-p:text-muted-foreground prose-p:leading-relaxed
         prose-li:text-muted-foreground
@@ -57,7 +58,8 @@ export function DesignMdViewer({ content }: DesignMdViewerProps) {
         prose-table:text-sm
         prose-th:text-foreground prose-th:border-white/10
         prose-td:text-muted-foreground prose-td:border-white/5
-      ">
+      "
+      >
         <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{content}</ReactMarkdown>
       </div>
     </div>

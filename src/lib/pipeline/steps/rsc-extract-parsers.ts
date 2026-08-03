@@ -3,15 +3,15 @@
  * Pure functions — no side effects, no pipeline dependency.
  */
 
-import type { RscExtractResult } from "../types";
+import type { RscExtractResult } from '../types';
 
 // ── 1. Detect Next.js ──
 
 export function detectNextJs(rawHtml: string): boolean {
   return (
-    rawHtml.includes("__NEXT_DATA__") ||
-    rawHtml.includes("_next/") ||
-    rawHtml.includes("next-route-announcer") ||
+    rawHtml.includes('__NEXT_DATA__') ||
+    rawHtml.includes('_next/') ||
+    rawHtml.includes('next-route-announcer') ||
     /<script[^>]*src=["'][^"']*_next\/static/.test(rawHtml)
   );
 }
@@ -19,9 +19,7 @@ export function detectNextJs(rawHtml: string): boolean {
 // ── 2. Extract __NEXT_DATA__ ──
 
 export function parseNextData(rawHtml: string): Record<string, unknown> | null {
-  const nextDataMatch = rawHtml.match(
-    /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i,
-  );
+  const nextDataMatch = rawHtml.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
   if (!nextDataMatch) return null;
 
   const rawJson = nextDataMatch[1].trim();
@@ -36,8 +34,8 @@ export function parseNextData(rawHtml: string): Record<string, unknown> | null {
       let depth = 0;
       let end = -1;
       for (let i = 0; i < rawJson.length; i++) {
-        if (rawJson[i] === "{" || rawJson[i] === "[") depth++;
-        if (rawJson[i] === "}" || rawJson[i] === "]") depth--;
+        if (rawJson[i] === '{' || rawJson[i] === '[') depth++;
+        if (rawJson[i] === '}' || rawJson[i] === ']') depth--;
         if (depth === 0 && i > 0) {
           end = i + 1;
           break;
@@ -47,7 +45,7 @@ export function parseNextData(rawHtml: string): Record<string, unknown> | null {
         return JSON.parse(rawJson.substring(0, end));
       }
     } catch {
-      console.warn("[rsc-extract] Failed to parse __NEXT_DATA__ JSON");
+      console.warn('[rsc-extract] Failed to parse __NEXT_DATA__ JSON');
     }
     return null;
   }
@@ -75,7 +73,7 @@ export function parseFontPreloads(rawHtml: string): string[] {
     /<link[^>]+rel=["']preload["'][^>]+href=["']([^"']*_next\/static\/media\/[^"']+)["'][^>]+as=["']font["'][^>]*>/gi,
   );
   for (const m of fontLinks) {
-    const filename = m[1].split("/").pop() || m[1];
+    const filename = m[1].split('/').pop() || m[1];
     preloads.push(filename);
   }
 
@@ -107,37 +105,33 @@ export function parseScriptPreloads(rawHtml: string): string[] {
 
 // ── 6. Parse route tree from __NEXT_DATA__ ──
 
-export function buildRouteTree(
-  nextData: Record<string, unknown>,
-): RscExtractResult["routeTree"] {
-  const routeTree: RscExtractResult["routeTree"] = [];
+export function buildRouteTree(nextData: Record<string, unknown>): RscExtractResult['routeTree'] {
+  const routeTree: RscExtractResult['routeTree'] = [];
   const nd = nextData;
 
   // Next.js Pages Router: routes
-  if (nd.routes && typeof nd.routes === "object") {
-    for (const [segment, routeInfo] of Object.entries(
-      nd.routes as Record<string, any>,
-    )) {
+  if (nd.routes && typeof nd.routes === 'object') {
+    for (const [segment, routeInfo] of Object.entries(nd.routes as Record<string, any>)) {
       routeTree.push({
         segment,
-        page: routeInfo?.page || "",
-        layout: "",
-        loading: "",
-        error: "",
+        page: routeInfo?.page || '',
+        layout: '',
+        loading: '',
+        error: '',
       });
     }
   }
 
   // Next.js App Router: extract from page props with dynamic query params
-  if (nd.query && typeof nd.query === "object") {
+  if (nd.query && typeof nd.query === 'object') {
     const queryKeys = Object.keys(nd.query as Record<string, unknown>);
     if (queryKeys.length > 0) {
       routeTree.push({
-        segment: "[dynamic]",
-        page: String(nd.page || ""),
-        layout: "",
-        loading: "",
-        error: "",
+        segment: '[dynamic]',
+        page: String(nd.page || ''),
+        layout: '',
+        loading: '',
+        error: '',
       });
     }
   }
@@ -147,16 +141,14 @@ export function buildRouteTree(
 
 // ── 7. Extract RSC streaming chunk IDs ──
 
-export function parseRscChunks(
-  rawHtml: string,
-): RscExtractResult["rscPayloads"] {
-  const payloads: RscExtractResult["rscPayloads"] = [];
+export function parseRscChunks(rawHtml: string): RscExtractResult['rscPayloads'] {
+  const payloads: RscExtractResult['rscPayloads'] = [];
   const rscChunkPattern = /self\.__next_f\.push\([\[(](\d+)/g;
   const seen = new Set<string>();
   for (const m of rawHtml.matchAll(rscChunkPattern)) {
     if (!seen.has(m[1])) {
       seen.add(m[1]);
-      payloads.push({ id: m[1], type: "chunk" });
+      payloads.push({ id: m[1], type: 'chunk' });
     }
   }
   return payloads;
@@ -165,16 +157,13 @@ export function parseRscChunks(
 // ── 8. Detect "use client" directives ──
 
 export function detectClientDirectives(rawHtml: string): string[] {
-  const hasUseClient =
-    rawHtml.includes('"use client') || rawHtml.includes("'use client");
+  const hasUseClient = rawHtml.includes('"use client') || rawHtml.includes("'use client");
   if (!hasUseClient) return [];
 
   const dqCount = (rawHtml.match(/"use client/g) || []).length;
   const sqCount = (rawHtml.match(/'use client/g) || []).length;
   const count = dqCount + sqCount;
-  return [
-    `use client (${count > 0 ? count : 1} directives found in HTML)`,
-  ];
+  return [`use client (${count > 0 ? count : 1} directives found in HTML)`];
 }
 
 // ── 9. Extract server component chunk names ──
@@ -187,10 +176,10 @@ export function classifyServerComponents(rawHtml: string): string[] {
   for (const m of chunkNames) {
     const name = m[1];
     if (
-      name.includes("layout") ||
-      name.includes("page") ||
-      name.includes("template") ||
-      name.includes("not-found")
+      name.includes('layout') ||
+      name.includes('page') ||
+      name.includes('template') ||
+      name.includes('not-found')
     ) {
       if (!components.includes(name)) {
         components.push(name);

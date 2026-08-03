@@ -1,5 +1,5 @@
-import type { AnalysisResult, AnalysisStore } from "./types";
-import { persistResult } from "./persistence";
+import type { AnalysisResult, AnalysisStore } from './types';
+import { persistResult } from './persistence';
 
 /** Polling interval ref — allows cleanup */
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -13,8 +13,10 @@ export function stopPolling() {
 
 export function startPolling(
   analysisId: string,
-  set: (partial: Partial<AnalysisStore> | ((state: AnalysisStore) => Partial<AnalysisStore>)) => void,
-  get: () => AnalysisStore
+  set: (
+    partial: Partial<AnalysisStore> | ((state: AnalysisStore) => Partial<AnalysisStore>),
+  ) => void,
+  get: () => AnalysisStore,
 ) {
   stopPolling();
 
@@ -29,17 +31,17 @@ export function startPolling(
         consecutiveErrors++;
         if (consecutiveErrors >= 3) {
           stopPolling();
-          set({ isAnalyzing: false, error: "Не удалось получить статус анализа" });
+          set({ isAnalyzing: false, error: 'Не удалось получить статус анализа' });
         }
         return;
       }
 
       consecutiveErrors = 0;
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         step: string;
         message: string;
         progress: number;
-        status: "running" | "completed" | "error";
+        status: 'running' | 'completed' | 'error';
         result?: Record<string, unknown> | null;
         error?: string | null;
         designMd?: string | null;
@@ -49,7 +51,7 @@ export function startPolling(
       };
 
       // Update progress bar
-      if (data.status === "running") {
+      if (data.status === 'running') {
         set({
           progress: {
             step: data.step,
@@ -69,7 +71,12 @@ export function startPolling(
       if (data.referenceCode) {
         set({
           referenceCodeContent: data.referenceCode,
-          result: get().result ? { ...get().result!, referenceCode: data.referenceCode as unknown as Record<string, unknown> } : get().result,
+          result: get().result
+            ? {
+                ...get().result!,
+                referenceCode: data.referenceCode as unknown as Record<string, unknown>,
+              }
+            : get().result,
         });
       }
       if (data.codePreviewHtml) {
@@ -78,19 +85,21 @@ export function startPolling(
       if (data.rscPayload) {
         set({
           rscPayloadContent: data.rscPayload,
-          result: get().result ? { ...get().result!, rscPayload: data.rscPayload as AnalysisResult['rscPayload'] } : get().result,
+          result: get().result
+            ? { ...get().result!, rscPayload: data.rscPayload as AnalysisResult['rscPayload'] }
+            : get().result,
         });
       }
 
       // Completed
-      if (data.status === "completed" && data.result) {
+      if (data.status === 'completed' && data.result) {
         stopPolling();
         const newResult = data.result as AnalysisResult;
         const newDesignMd = (data.designMd as string) || (newResult?.designMd as string) || null;
         set({
           isAnalyzing: false,
           result: newResult,
-          progress: { step: "done", message: "Анализ завершён!", progress: 1 },
+          progress: { step: 'done', message: 'Анализ завершён!', progress: 1 },
           designMdContent: newDesignMd,
         });
         persistResult(newResult, analysisId, newDesignMd);
@@ -98,11 +107,11 @@ export function startPolling(
       }
 
       // Error
-      if (data.status === "error") {
+      if (data.status === 'error') {
         stopPolling();
         set({
           isAnalyzing: false,
-          error: data.error || data.message || "Ошибка анализа",
+          error: data.error || data.message || 'Ошибка анализа',
         });
         get().loadHistory();
       }
@@ -110,7 +119,7 @@ export function startPolling(
       consecutiveErrors++;
       if (consecutiveErrors >= 3) {
         stopPolling();
-        const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
+        const msg = err instanceof Error ? err.message : 'Неизвестная ошибка';
         set({ isAnalyzing: false, error: msg });
       }
     }

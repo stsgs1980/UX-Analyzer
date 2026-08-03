@@ -28,18 +28,23 @@ async function fetchLocalScreenshot(
       signal: AbortSignal.timeout(45000),
     });
     if (res.ok) {
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("image")) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('image')) {
         const arrayBuffer = await res.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
         const sizeKB = Math.round(base64.length / 1024);
-        console.log(`[screenshot] Local service OK (${fullPage ? "fullPage" : "viewport"}), size: ${sizeKB} KB`);
-        return { base64: `data:image/jpeg;base64,${base64}`, source: fullPage ? "screenshot_fullpage" : "screenshot_viewport" };
+        console.log(
+          `[screenshot] Local service OK (${fullPage ? 'fullPage' : 'viewport'}), size: ${sizeKB} KB`,
+        );
+        return {
+          base64: `data:image/jpeg;base64,${base64}`,
+          source: fullPage ? 'screenshot_fullpage' : 'screenshot_viewport',
+        };
       }
     }
-    console.log("[screenshot] Local service returned non-image or error:", res.status);
+    console.log('[screenshot] Local service returned non-image or error:', res.status);
   } catch (e) {
-    console.log("[screenshot] Local service unavailable:", e instanceof Error ? e.message : e);
+    console.log('[screenshot] Local service unavailable:', e instanceof Error ? e.message : e);
   }
   return null;
 }
@@ -54,19 +59,23 @@ async function fetchThumIo(url: string): Promise<{ base64: string; source: strin
       signal: AbortSignal.timeout(25000),
     });
     if (res.ok) {
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("image") || contentType.includes("gif")) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('image') || contentType.includes('gif')) {
         const arrayBuffer = await res.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
         if (base64.length > 5000) {
-          console.log("[screenshot] thum.io fallback OK, size:", Math.round(base64.length / 1024), "KB");
-          return { base64: `data:image/png;base64,${base64}`, source: "thum_io" };
+          console.log(
+            '[screenshot] thum.io fallback OK, size:',
+            Math.round(base64.length / 1024),
+            'KB',
+          );
+          return { base64: `data:image/png;base64,${base64}`, source: 'thum_io' };
         }
       }
     }
-    console.log("[screenshot] thum.io fallback failed");
+    console.log('[screenshot] thum.io fallback failed');
   } catch (e) {
-    console.warn("[screenshot] thum.io failed:", e);
+    console.warn('[screenshot] thum.io failed:', e);
   }
   return null;
 }
@@ -76,7 +85,9 @@ async function fetchThumIo(url: string): Promise<{ base64: string; source: strin
  * Strategy: fullPage → if too large → viewport → thum.io fallback.
  * Returns base64 data URI (image/jpeg) or null.
  */
-export async function captureScreenshot(url: string): Promise<{ base64: string; source: string } | null> {
+export async function captureScreenshot(
+  url: string,
+): Promise<{ base64: string; source: string } | null> {
   // 1. Try fullPage capture
   const fullPage = await fetchLocalScreenshot(url, true);
   if (fullPage) {
@@ -84,7 +95,9 @@ export async function captureScreenshot(url: string): Promise<{ base64: string; 
     if (sizeBytes <= FULL_PAGE_MAX_BYTES) {
       return fullPage;
     }
-    console.log(`[screenshot] Full-page too large (${Math.round(sizeBytes / 1024)} KB), trying viewport...`);
+    console.log(
+      `[screenshot] Full-page too large (${Math.round(sizeBytes / 1024)} KB), trying viewport...`,
+    );
   }
 
   // 2. Fallback: viewport-only (smaller, always fits vision model)

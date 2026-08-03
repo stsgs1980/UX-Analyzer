@@ -7,20 +7,20 @@
  * This step is OPTIONAL — controlled by ctx.generateReferenceCode flag.
  */
 
-import type { PipelineStep } from "../types";
-import { buildReferenceCodePrompt } from "@/lib/reference-code-prompt";
-import { localProvider } from "@/lib/gemini-provider";
-import { llmWithFallback } from "../helpers";
-import { extractJson } from "@/lib/extract-json";
-import { formatReferenceCode } from "./format-reference-code";
-import { generateCodePreview } from "./generate-code-preview";
+import type { PipelineStep } from '../types';
+import { buildReferenceCodePrompt } from '@/lib/reference-code-prompt';
+import { localProvider } from '@/lib/gemini-provider';
+import { llmWithFallback } from '../helpers';
+import { extractJson } from '@/lib/extract-json';
+import { formatReferenceCode } from './format-reference-code';
+import { generateCodePreview } from './generate-code-preview';
 
 // Re-export for backward compatibility (tests import from here)
-export { formatReferenceCode } from "./format-reference-code";
+export { formatReferenceCode } from './format-reference-code';
 
 export const referenceCodeStep: PipelineStep = {
-  id: "reference-code",
-  label: "Reference Pipeline",
+  id: 'reference-code',
+  label: 'Reference Pipeline',
 
   async run(ctx) {
     // Skip if not requested or no analysis result
@@ -29,21 +29,23 @@ export const referenceCodeStep: PipelineStep = {
     }
 
     if (!ctx.analysisResult) {
-      console.log("[reference-code] Skipped: no analysis result");
+      console.log('[reference-code] Skipped: no analysis result');
       return;
     }
 
     ctx.send({
-      type: "progress",
-      step: "reference_code",
-      message: "Генерирую reference implementation pipeline...",
+      type: 'progress',
+      step: 'reference_code',
+      message: 'Генерирую reference implementation pipeline...',
       progress: 0.91,
       analysisId: ctx.analysisId,
     });
 
-    const sourceDescription = ctx.sourceDescription
-      || ctx.urls[0]
-      || "unknown";
+    const sourceDescription = ctx.pinterestData
+      ? 'Pinterest: ' + ctx.pinterestData.title + ' by ' + ctx.pinterestData.authorName
+      : ctx.hasImageUpload
+        ? 'Uploaded: ' + (ctx.imageFileName || 'image')
+        : ctx.urls[0] || 'unknown';
 
     const prompt = buildReferenceCodePrompt(
       ctx.analysisResult,
@@ -57,18 +59,18 @@ export const referenceCodeStep: PipelineStep = {
         localProvider,
         ctx.primaryZai,
         {
-          messages: [{ role: "user", content: prompt }],
-          thinking: { type: "disabled" },
+          messages: [{ role: 'user', content: prompt }],
+          thinking: { type: 'disabled' },
         },
         120000,
-        "Reference code generation",
+        'Reference code generation',
         ctx.aiProviderRef,
       );
 
-      const responseText = (completion as any)?.choices?.[0]?.message?.content || "";
+      const responseText = (completion as any)?.choices?.[0]?.message?.content || '';
 
       if (!responseText) {
-        console.warn("[reference-code] Empty response from LLM");
+        console.warn('[reference-code] Empty response from LLM');
         return;
       }
 
@@ -93,20 +95,20 @@ export const referenceCodeStep: PipelineStep = {
       }
 
       ctx.send({
-        type: "reference_code",
+        type: 'reference_code',
         content: referenceCode,
         analysisId: ctx.analysisId,
       });
 
-      console.log("[reference-code] Generated successfully, length:", referenceCode.length);
+      console.log('[reference-code] Generated successfully, length:', referenceCode.length);
 
       // ── Phase 2: Generate live code preview HTML ──
       await generateCodePreview(ctx, referenceData, sourceDescription);
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
-      console.warn("[reference-code] Failed:", errMsg);
+      console.warn('[reference-code] Failed:', errMsg);
       ctx.send({
-        type: "warn",
+        type: 'warn',
         message: `Reference pipeline не сгенерирован: ${errMsg}`,
         analysisId: ctx.analysisId,
       });

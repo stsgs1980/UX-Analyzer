@@ -1,12 +1,22 @@
-"use client";
+'use client';
 
-import { useAnalysisStore } from "@/store/analysis-store";
-import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useAnalysisStore } from '@/store/analysis-store';
+import { motion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Globe, Search, Brain, FileJson, CheckCircle, Pin,
-  ImageDown, Eye, Loader2, Save, Sparkles, Zap,
-} from "lucide-react";
+  Globe,
+  Search,
+  Brain,
+  FileJson,
+  CheckCircle,
+  Pin,
+  ImageDown,
+  Eye,
+  Loader2,
+  Save,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 
 interface StepDef {
   key: string;
@@ -16,18 +26,58 @@ interface StepDef {
 }
 
 const STEPS: StepDef[] = [
-  { key: "init",              icon: Sparkles,  label: "Инициализация",  description: "Подключение к AI-движку" },
-  { key: "pinterest",          icon: Pin,       label: "Pinterest",       description: "Извлечение данных пина" },
-  { key: "upload",            icon: ImageDown, label: "Загрузка",        description: "Обработка загруженного изображения" },
-  { key: "downloading_image", icon: ImageDown, label: "Скачивание",      description: "Загрузка изображения по URL" },
-  { key: "fetching",          icon: Globe,     label: "Сбор данных",    description: "Чтение страниц и поиск контекста" },
-  { key: "vlm",               icon: Eye,       label: "Визуальный AI",  description: "Распознавание цветов, типографики, компоновки" },
-  { key: "preparing",         icon: Zap,       label: "Подготовка",     description: "Компоновка данных для анализа" },
-  { key: "analyzing",         icon: Brain,     label: "AI-анализ",      description: "Обработка 8 методологий UX-анализа" },
-  { key: "parsing",           icon: FileJson,  label: "Обработка",      description: "Разбор структуры результатов" },
-  { key: "design_md",         icon: FileJson,  label: "DESIGN.md",     description: "Генерация дизайн-документации" },
-  { key: "saving",            icon: Save,      label: "Сохранение",     description: "Запись в базу данных" },
-  { key: "done",              icon: CheckCircle, label: "Готово",      description: "" },
+  { key: 'init', icon: Sparkles, label: 'Инициализация', description: 'Подключение к AI-движку' },
+  { key: 'pinterest', icon: Pin, label: 'Pinterest', description: 'Извлечение данных пина' },
+  {
+    key: 'upload',
+    icon: ImageDown,
+    label: 'Загрузка',
+    description: 'Обработка загруженного изображения',
+  },
+  {
+    key: 'downloading_image',
+    icon: ImageDown,
+    label: 'Скачивание',
+    description: 'Загрузка изображения по URL',
+  },
+  {
+    key: 'fetching',
+    icon: Globe,
+    label: 'Сбор данных',
+    description: 'Чтение страниц и поиск контекста',
+  },
+  {
+    key: 'vlm',
+    icon: Eye,
+    label: 'Визуальный AI',
+    description: 'Распознавание цветов, типографики, компоновки',
+  },
+  {
+    key: 'preparing',
+    icon: Zap,
+    label: 'Подготовка',
+    description: 'Компоновка данных для анализа',
+  },
+  {
+    key: 'analyzing',
+    icon: Brain,
+    label: 'AI-анализ',
+    description: 'Обработка 8 методологий UX-анализа',
+  },
+  {
+    key: 'parsing',
+    icon: FileJson,
+    label: 'Обработка',
+    description: 'Разбор структуры результатов',
+  },
+  {
+    key: 'design_md',
+    icon: FileJson,
+    label: 'DESIGN.md',
+    description: 'Генерация дизайн-документации',
+  },
+  { key: 'saving', icon: Save, label: 'Сохранение', description: 'Запись в базу данных' },
+  { key: 'done', icon: CheckCircle, label: 'Готово', description: '' },
 ];
 
 function formatElapsed(seconds: number): string {
@@ -49,7 +99,7 @@ export function AnalysisProgress() {
   const { isAnalyzing, progress, error } = useAnalysisStore();
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef<number>(0);
-  const prevStepRef = useRef<string>("");
+  const prevStepRef = useRef<string>('');
 
   // Track elapsed time
   useEffect(() => {
@@ -58,7 +108,7 @@ export function AnalysisProgress() {
     }
     if (!isAnalyzing) {
       startTimeRef.current = 0;
-      prevStepRef.current = "";
+      prevStepRef.current = '';
       return;
     }
     const tick = setInterval(() => {
@@ -91,12 +141,12 @@ export function AnalysisProgress() {
     );
   }
 
-  const currentStep = progress?.step || "init";
+  const currentStep = progress?.step || 'init';
   const progressValue = progress?.progress || 0;
   const currentIdx = STEPS.findIndex((s) => s.key === currentStep);
   const currentStepDef = STEPS[currentIdx] || STEPS[0];
   const eta = formatEta(progressValue, elapsed);
-  const isDone = currentStep === "done";
+  const isDone = currentStep === 'done';
   const pct = Math.round(progressValue * 100);
 
   // Determine which steps are "in the path" (done + active + next)
@@ -123,16 +173,22 @@ export function AnalysisProgress() {
                 transition={{ delay: globalIdx * 0.03, duration: 0.3 }}
                 className={`flex items-center gap-1.5 px-1.5 sm:px-2 py-1.5 transition-all duration-300 text-xs sm:text-sm rounded-md ${
                   isActive
-                    ? "text-emerald-300 font-medium bg-emerald-500/8"
+                    ? 'text-emerald-300 font-medium bg-emerald-500/8'
                     : isStepDone
-                    ? "text-emerald-500/50"
-                    : "text-muted-foreground/20"
+                      ? 'text-emerald-500/50'
+                      : 'text-muted-foreground/20'
                 }`}
               >
                 <motion.div
                   animate={isActive ? { opacity: [0.5, 1, 0.5] } : {}}
                   transition={isActive ? { duration: 1.5, repeat: Infinity } : {}}
-                  className={isActive ? "text-emerald-400" : isStepDone ? "text-emerald-500/60" : "text-muted-foreground/20"}
+                  className={
+                    isActive
+                      ? 'text-emerald-400'
+                      : isStepDone
+                        ? 'text-emerald-500/60'
+                        : 'text-muted-foreground/20'
+                  }
                 >
                   {isStepDone ? (
                     <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -147,11 +203,11 @@ export function AnalysisProgress() {
               {globalIdx < STEPS.length - 1 && globalIdx <= currentIdx && (
                 <div className="flex-1 h-px min-w-[6px] sm:min-w-[12px]">
                   <motion.div
-                    className={`h-full ${isStepDone ? "bg-emerald-500/30" : "bg-white/5"}`}
+                    className={`h-full ${isStepDone ? 'bg-emerald-500/30' : 'bg-white/5'}`}
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: isStepDone ? 1 : 0 }}
                     transition={{ duration: 0.3 }}
-                    style={{ transformOrigin: "left" }}
+                    style={{ transformOrigin: 'left' }}
                   />
                 </div>
               )}
@@ -173,7 +229,8 @@ export function AnalysisProgress() {
         <motion.div
           className="absolute inset-0 h-1 animate-shimmer overflow-hidden"
           style={{
-            background: "linear-gradient(90deg, transparent, oklch(0.72 0.17 155 / 20%), transparent)",
+            background:
+              'linear-gradient(90deg, transparent, oklch(0.72 0.17 155 / 20%), transparent)',
           }}
         />
       </div>
@@ -215,14 +272,18 @@ export function AnalysisProgress() {
             animate={{ opacity: 1 }}
             className="text-xs sm:text-sm text-muted-foreground truncate"
           >
-            {progress?.message || "Подготовка..."}
+            {progress?.message || 'Подготовка...'}
           </motion.p>
         </div>
 
         {/* Time + percentage */}
         <div className="text-right shrink-0 pl-2">
-          <span className="text-lg font-bold text-emerald-400 tabular-nums tracking-[-0.04em]" style={{ fontVariantNumeric: "tabular-nums" }}>
-            {pct}<span className="text-xs text-emerald-400/40 ml-0.5">%</span>
+          <span
+            className="text-lg font-bold text-emerald-400 tabular-nums tracking-[-0.04em]"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            {pct}
+            <span className="text-xs text-emerald-400/40 ml-0.5">%</span>
           </span>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 justify-end mt-0.5">
             <span>{formatElapsed(elapsed)}</span>

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { AnalysisResult } from "@/store/analysis-store";
-import { Badge } from "@/components/ui/badge";
-import { Sparkles, Heart, Accessibility, Grid3X3 } from "lucide-react";
-import { SectionLabel } from "./analysis-shared";
+import type { AnalysisResult } from '@/store/analysis-store';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, Heart, Accessibility, Grid3X3 } from 'lucide-react';
+import { SectionLabel } from './analysis-shared';
 
 type VlmEffects = NonNullable<AnalysisResult['vlmAnalysis']>['visualEffects'];
 type VlmMood = NonNullable<AnalysisResult['vlmAnalysis']>['moodAndTone'];
@@ -33,12 +33,12 @@ export function MoodSection({ mood }: { mood?: VlmMood }) {
       <SectionLabel icon={Heart}>Настроение и тон</SectionLabel>
       <div className="flex flex-wrap gap-1.5 mb-2">
         {mood.keywords?.map((kw) => (
-          <Badge key={kw} variant="secondary" className="text-xs">{kw}</Badge>
+          <Badge key={kw} variant="secondary" className="text-xs">
+            {kw}
+          </Badge>
         ))}
       </div>
-      {mood.description && (
-        <p className="text-sm text-muted-foreground">{mood.description}</p>
-      )}
+      {mood.description && <p className="text-sm text-muted-foreground">{mood.description}</p>}
     </div>
   );
 }

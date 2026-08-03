@@ -1,23 +1,38 @@
-import type { AnalysisResult } from "@/store/analysis-store";
-import { renderTeardownSection } from "@/lib/export-markdown/teardown";
-import { renderSpecificationSection } from "@/lib/export-markdown/specification";
-import { renderVlmAnalysisSection } from "@/lib/export-markdown/vlm-analysis";
-import { renderRscPayloadSection } from "@/lib/export-markdown/rsc-payload";
+import type { AnalysisResult } from '@/store/analysis-store';
+import { renderTeardownSection } from '@/lib/export-markdown/teardown';
+import { renderSpecificationSection } from '@/lib/export-markdown/specification';
+import { renderVlmAnalysisSection } from '@/lib/export-markdown/vlm-analysis';
+import { renderRscPayloadSection } from '@/lib/export-markdown/rsc-payload';
 
 /**
  * Compiles a full analysis result into a well-structured Markdown document.
  * Covers all sections: teardown, deconstruction, spec, reverse engineering,
  * audit, heuristic evaluation, VLM analysis, design system, RSC payload.
  */
-export function buildMarkdownExport(result: AnalysisResult, designMdContent?: string | null): string {
+export function buildMarkdownExport(
+  result: AnalysisResult,
+  designMdContent?: string | null,
+): string {
   const lines: string[] = [];
-  const { teardown: td, deconstruction: decon, spec, reverseEngineering: rev, audit, heuristicEvaluation: heur, vlmAnalysis: vlm, rscPayload: rsc } = result;
+  const {
+    teardown: td,
+    deconstruction: decon,
+    spec,
+    reverseEngineering: rev,
+    audit,
+    heuristicEvaluation: heur,
+    vlmAnalysis: vlm,
+    rscPayload: rsc,
+  } = result;
 
   // ── Header ──
-  const title = td?.title || result.url || "UX Analysis Report";
-  const date = new Date().toLocaleDateString("ru-RU", {
-    year: "numeric", month: "long", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
+  const title = td?.title || result.url || 'UX Analysis Report';
+  const date = new Date().toLocaleDateString('ru-RU', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   lines.push(`# ${title}\n`);
@@ -27,25 +42,26 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
   if (td?.author) lines.push(`**Автор:** ${td.author}`);
   lines.push(`**Дата:** ${date}`);
   if (result.meta?.confidence) lines.push(`**Уверенность:** ${result.meta.confidence}`);
-  if (result.meta?.dataSources?.length) lines.push(`**Источники данных:** ${result.meta.dataSources.join(", ")}`);
-  lines.push("");
-  lines.push("---\n");
+  if (result.meta?.dataSources?.length)
+    lines.push(`**Источники данных:** ${result.meta.dataSources.join(', ')}`);
+  lines.push('');
+  lines.push('---\n');
 
   // ── Teardown ──
   if (td) lines.push(renderTeardownSection(td));
 
   // ── Deconstruction ──
   if (decon?.layers?.length) {
-    lines.push("## 2. Деконструкция (Смысловые слои)\n");
-    decon.layers.forEach(layer => {
+    lines.push('## 2. Деконструкция (Смысловые слои)\n');
+    decon.layers.forEach((layer) => {
       lines.push(`### ${layer.name}`);
       lines.push(`${layer.analysis}\n`);
     });
     if (decon.connections) {
-      lines.push("### Связи между слоями");
+      lines.push('### Связи между слоями');
       lines.push(decon.connections);
     }
-    lines.push("\n---\n");
+    lines.push('\n---\n');
   }
 
   // ── Specification ──
@@ -53,46 +69,46 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
 
   // ── Reverse Engineering ──
   if (rev) {
-    lines.push("## 4. Обратная инженерия (Архитектура)\n");
+    lines.push('## 4. Обратная инженерия (Архитектура)\n');
     const layers = [
-      { label: "Frontend", data: rev.frontend },
-      { label: "Анимации", data: rev.animationLib },
-      { label: "Слой данных", data: rev.dataLayer },
-      { label: "Backend", data: rev.backend },
-      { label: "Инфраструктура", data: rev.infra },
+      { label: 'Frontend', data: rev.frontend },
+      { label: 'Анимации', data: rev.animationLib },
+      { label: 'Слой данных', data: rev.dataLayer },
+      { label: 'Backend', data: rev.backend },
+      { label: 'Инфраструктура', data: rev.infra },
     ];
-    lines.push("| Слой | Стек | Уверенность | Обоснование |");
-    lines.push("|------|------|-------------|-------------|");
+    lines.push('| Слой | Стек | Уверенность | Обоснование |');
+    lines.push('|------|------|-------------|-------------|');
     layers.forEach(({ label, data }) => {
       if (data?.stack) {
         lines.push(`| ${label} | ${data.stack} | ${data.confidence} | ${data.evidence} |`);
       }
     });
-    lines.push("\n---\n");
+    lines.push('\n---\n');
   }
 
   // ── Audit ──
   if (audit?.problems?.length) {
-    lines.push("## 5. Аудит UX (Проблемы)\n");
-    lines.push("| Область | Серьёзность | Описание | Рекомендация |");
-    lines.push("|---------|-------------|----------|--------------|");
-    audit.problems.forEach(p => {
+    lines.push('## 5. Аудит UX (Проблемы)\n');
+    lines.push('| Область | Серьёзность | Описание | Рекомендация |');
+    lines.push('|---------|-------------|----------|--------------|');
+    audit.problems.forEach((p) => {
       lines.push(`| ${p.area} | **${p.severity}** | ${p.description} | ${p.recommendation} |`);
     });
-    lines.push("\n---\n");
+    lines.push('\n---\n');
   }
 
   // ── Heuristic Evaluation ──
   if (heur) {
-    lines.push("## 6. Эвристическая оценка (Nielsen)\n");
+    lines.push('## 6. Эвристическая оценка (Nielsen)\n');
 
     if (heur.scores?.length) {
-      lines.push("| Эвристика | Оценка (0-4) | Наблюдения | Рекомендация |");
-      lines.push("|-----------|---------------|-------------|--------------|");
-      heur.scores.forEach(s => {
+      lines.push('| Эвристика | Оценка (0-4) | Наблюдения | Рекомендация |');
+      lines.push('|-----------|---------------|-------------|--------------|');
+      heur.scores.forEach((s) => {
         lines.push(`| ${s.heuristic} | ${s.score}/4 | ${s.observations} | ${s.recommendation} |`);
       });
-      lines.push("");
+      lines.push('');
     }
 
     if (heur.averageScore !== undefined) {
@@ -101,7 +117,7 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
     if (heur.verdict) {
       lines.push(`**Вердикт:** ${heur.verdict}`);
     }
-    lines.push("\n---\n");
+    lines.push('\n---\n');
   }
 
   // ── VLM Analysis ──
@@ -109,19 +125,19 @@ export function buildMarkdownExport(result: AnalysisResult, designMdContent?: st
 
   // ── Design System Document ──
   if (designMdContent) {
-    lines.push("## 8. Design System Document\n");
+    lines.push('## 8. Design System Document\n');
     lines.push(designMdContent);
-    lines.push("\n---\n");
+    lines.push('\n---\n');
   }
 
   // ── RSC Payload ──
   if (rsc) lines.push(renderRscPayloadSection(rsc));
 
   // ── Footer ──
-  lines.push("");
-  lines.push("---");
-  lines.push("");
-  lines.push("*Generated by UX-Analyzer — AI-powered UX analysis tool*");
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('*Generated by UX-Analyzer — AI-powered UX analysis tool*');
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

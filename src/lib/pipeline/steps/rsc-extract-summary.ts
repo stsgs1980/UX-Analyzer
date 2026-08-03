@@ -2,13 +2,13 @@
  * Builds a human-readable summary for RSC extraction results.
  */
 
-import type { RscExtractResult } from "../types";
+import type { RscExtractResult } from '../types';
 
 export function buildSummary(result: RscExtractResult): string {
   const parts: string[] = [];
 
   parts.push(
-    `Next.js ${result.nextData ? "detected (buildId: " + ((result.nextData.buildId as string) || "N/A") + ")" : "detected (no __NEXT_DATA__)"}`,
+    `Next.js ${result.nextData ? 'detected (buildId: ' + ((result.nextData.buildId as string) || 'N/A') + ')' : 'detected (no __NEXT_DATA__)'}`,
   );
 
   if (result.nextData) {
@@ -34,5 +34,5 @@ export function buildSummary(result: RscExtractResult): string {
     parts.push(`Routes: ${result.routeTree.length}`);
   }
 
-  return parts.join(". ") + ".";
+  return parts.join('. ') + '.';
 }

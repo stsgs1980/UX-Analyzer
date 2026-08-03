@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { X, ImagePlus } from "lucide-react";
-import { useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Button } from '@/components/ui/button';
+import { X, ImagePlus } from 'lucide-react';
+import { useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ------------------------------------------------------------------ */
 /*  Image upload trigger button + hidden file input                   */
@@ -15,18 +15,14 @@ interface ImageUploadButtonProps {
   onAddImage: (base64: string, fileName: string) => void;
 }
 
-export function ImageUploadButton({
-  isAnalyzing,
-  hasUrls,
-  onAddImage,
-}: ImageUploadButtonProps) {
+export function ImageUploadButton({ isAnalyzing, hasUrls, onAddImage }: ImageUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (!file.type.startsWith("image/")) return;
+      if (!file.type.startsWith('image/')) return;
       if (file.size > 10 * 1024 * 1024) return;
 
       const reader = new FileReader();
@@ -35,9 +31,9 @@ export function ImageUploadButton({
         onAddImage(base64, file.name);
       };
       reader.readAsDataURL(file);
-      e.target.value = "";
+      e.target.value = '';
     },
-    [onAddImage]
+    [onAddImage],
   );
 
   return (
@@ -85,7 +81,7 @@ export function ImageUploadPreview({
       {imageBase64 && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
+          animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           className="border border-emerald-500/20 p-3 space-y-3"
         >
@@ -93,7 +89,7 @@ export function ImageUploadPreview({
             <div className="flex items-center gap-2">
               <ImagePlus className="h-4 w-4 text-emerald-400" />
               <span className="text-sm text-emerald-300 font-medium truncate max-w-[300px]">
-                {imageFileName || "Изображение"}
+                {imageFileName || 'Изображение'}
               </span>
             </div>
             {!isAnalyzing && (

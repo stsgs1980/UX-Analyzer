@@ -1,13 +1,13 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 
-export type PaletteTab = "dominant" | "groups";
+export type PaletteTab = 'dominant' | 'groups';
 
 /**
  * Manages the dominant / groups tab switcher for ColorPalette.
  */
 export function usePaletteTabs() {
-  const [activeTab, setActiveTab] = useState<PaletteTab>("dominant");
+  const [activeTab, setActiveTab] = useState<PaletteTab>('dominant');
 
   return { activeTab, setActiveTab };
 }

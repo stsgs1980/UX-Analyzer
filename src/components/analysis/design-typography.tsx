@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { AnalysisResult } from "@/store/analysis-store";
-import { Badge } from "@/components/ui/badge";
-import { Type, LayoutGrid } from "lucide-react";
-import { SectionLabel } from "./analysis-shared";
+import type { AnalysisResult } from '@/store/analysis-store';
+import { Badge } from '@/components/ui/badge';
+import { Type, LayoutGrid } from 'lucide-react';
+import { SectionLabel } from './analysis-shared';
 
 type VlmTypography = NonNullable<AnalysisResult['vlmAnalysis']>['typography'];
 
@@ -16,11 +16,17 @@ export function TypographySection({ typography }: { typography?: VlmTypography }
           <SectionLabel icon={Type}>Заголовки</SectionLabel>
           <div className="border-l-2 border-l-primary/40 pl-4 py-3 space-y-1">
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs">{typography.headings.style}</Badge>
-              <Badge variant="secondary" className="text-xs">{typography.headings.weight}</Badge>
+              <Badge variant="outline" className="text-xs">
+                {typography.headings.style}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {typography.headings.weight}
+              </Badge>
             </div>
             {typography.headings.characteristics && (
-              <p className="text-sm text-muted-foreground mt-2">{typography.headings.characteristics}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {typography.headings.characteristics}
+              </p>
             )}
           </div>
         </div>
@@ -30,11 +36,17 @@ export function TypographySection({ typography }: { typography?: VlmTypography }
           <SectionLabel icon={Type}>Основной текст</SectionLabel>
           <div className="border-l-2 border-l-white/10 pl-4 py-3 space-y-1">
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs">{typography.body.style}</Badge>
-              <Badge variant="secondary" className="text-xs">{typography.body.weight}</Badge>
+              <Badge variant="outline" className="text-xs">
+                {typography.body.style}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {typography.body.weight}
+              </Badge>
             </div>
             {typography.body.characteristics && (
-              <p className="text-sm text-muted-foreground mt-2">{typography.body.characteristics}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {typography.body.characteristics}
+              </p>
             )}
           </div>
         </div>

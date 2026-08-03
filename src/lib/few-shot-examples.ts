@@ -7,7 +7,7 @@
  * with JSX code containing template literals.
  */
 
-const BT = "```"; // backtick-triple constant to avoid escaping issues
+const BT = '```'; // backtick-triple constant to avoid escaping issues
 
 export const fewShotExamples: string = `## Few-shot примеры (реальный production-код Pointer AI Landing)
 

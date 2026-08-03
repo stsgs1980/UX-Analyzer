@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import type { AnalysisResult } from "@/store/analysis-store";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { LayoutGrid, Box } from "lucide-react";
-import { SectionLabel } from "./analysis-shared";
+import type { AnalysisResult } from '@/store/analysis-store';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { LayoutGrid, Box } from 'lucide-react';
+import { SectionLabel } from './analysis-shared';
 
 type VlmLayout = NonNullable<AnalysisResult['vlmAnalysis']>['layout'];
 type VlmComponents = NonNullable<AnalysisResult['vlmAnalysis']>['components'];
@@ -12,10 +12,10 @@ type VlmComponents = NonNullable<AnalysisResult['vlmAnalysis']>['components'];
 export function LayoutSection({ layout }: { layout?: VlmLayout }) {
   if (!layout) return null;
   const items = [
-    { label: "Сетка", value: layout.gridType },
-    { label: "Плотность", value: layout.density },
-    { label: "Выравнивание", value: layout.alignment },
-    { label: "Макс. ширина", value: layout.maxContentWidth },
+    { label: 'Сетка', value: layout.gridType },
+    { label: 'Плотность', value: layout.density },
+    { label: 'Выравнивание', value: layout.alignment },
+    { label: 'Макс. ширина', value: layout.maxContentWidth },
   ];
   return (
     <div>
@@ -48,10 +48,14 @@ export function ComponentsSection({ components }: { components?: VlmComponents }
           {components.map((comp, i) => (
             <div key={i} className="border-b border-white/5 pb-3">
               <div className="flex items-center gap-2 mb-1.5">
-                <Badge variant="outline" className="text-xs">{comp.type}</Badge>
+                <Badge variant="outline" className="text-xs">
+                  {comp.type}
+                </Badge>
                 <div className="flex gap-1">
                   {comp.states?.map((s) => (
-                    <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                    <Badge key={s} variant="secondary" className="text-[10px]">
+                      {s}
+                    </Badge>
                   ))}
                 </div>
               </div>

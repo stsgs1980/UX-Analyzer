@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import type { AnalysisResult } from "@/store/analysis-store";
-import { useAnalysisStore } from "@/store/analysis-store";
-import { ColorPalette } from "./color-palette";
-import { DesignMdViewer } from "./design-md-viewer";
-import { TypographySection } from "./design-typography";
-import { LayoutSection, ComponentsSection } from "./design-layout-components";
-import { EffectsSection, MoodSection, A11ySection, PatternsSection } from "./design-mood-sections";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import type { AnalysisResult } from '@/store/analysis-store';
+import { useAnalysisStore } from '@/store/analysis-store';
+import { ColorPalette } from './color-palette';
+import { DesignMdViewer } from './design-md-viewer';
+import { TypographySection } from './design-typography';
+import { LayoutSection, ComponentsSection } from './design-layout-components';
+import { EffectsSection, MoodSection, A11ySection, PatternsSection } from './design-mood-sections';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Palette,
   Type,
@@ -18,7 +18,7 @@ import {
   Heart,
   FileText,
   Image as ImageIcon,
-} from "lucide-react";
+} from 'lucide-react';
 
 export function DesignSystemTab({ data }: { data: AnalysisResult }) {
   const designMdContent = useAnalysisStore((s) => s.designMdContent) || data.designMd;
@@ -30,7 +30,8 @@ export function DesignSystemTab({ data }: { data: AnalysisResult }) {
       <div className="py-12 text-center">
         <ImageIcon className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
         <p className="text-muted-foreground text-sm">
-          Визуальный анализ доступен при анализе любого URL (автоматический скриншот), Pinterest, прямой ссылки на изображение или загрузки файла.
+          Визуальный анализ доступен при анализе любого URL (автоматический скриншот), Pinterest,
+          прямой ссылки на изображение или загрузки файла.
         </p>
       </div>
     );
@@ -62,25 +63,46 @@ export function DesignSystemTab({ data }: { data: AnalysisResult }) {
       {vlm && (
         <Tabs defaultValue="colors" className="w-full">
           <TabsList className="w-full flex flex-wrap h-auto gap-1 border-b border-white/5 pb-0">
-            <TabsTrigger value="colors" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="colors"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <Palette className="h-3.5 w-3.5" /> Палитра
             </TabsTrigger>
-            <TabsTrigger value="typography" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="typography"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <Type className="h-3.5 w-3.5" /> Типографика
             </TabsTrigger>
-            <TabsTrigger value="layout" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="layout"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <LayoutGrid className="h-3.5 w-3.5" /> Layout
             </TabsTrigger>
-            <TabsTrigger value="components" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="components"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <Box className="h-3.5 w-3.5" /> Компоненты
             </TabsTrigger>
-            <TabsTrigger value="effects" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="effects"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <Sparkles className="h-3.5 w-3.5" /> Эффекты
             </TabsTrigger>
-            <TabsTrigger value="mood" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="mood"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <Heart className="h-3.5 w-3.5" /> Настроение
             </TabsTrigger>
-            <TabsTrigger value="designmd" className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2">
+            <TabsTrigger
+              value="designmd"
+              className="flex items-center gap-1.5 text-xs data-[state=active]:border-b-2 data-[state=active]:border-b-emerald-400 pb-2"
+            >
               <FileText className="h-3.5 w-3.5" /> DESIGN.md
             </TabsTrigger>
           </TabsList>
@@ -123,9 +145,7 @@ export function DesignSystemTab({ data }: { data: AnalysisResult }) {
         </Tabs>
       )}
 
-      {!vlm && designMdContent && (
-        <DesignMdViewer content={designMdContent} />
-      )}
+      {!vlm && designMdContent && <DesignMdViewer content={designMdContent} />}
     </div>
   );
 }

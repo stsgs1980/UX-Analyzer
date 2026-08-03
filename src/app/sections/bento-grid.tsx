@@ -1,68 +1,68 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useAnalysisStore } from "@/store/analysis-store";
-import { UrlInput } from "@/components/analysis/url-input";
-import { AnalysisProgress } from "@/components/analysis/analysis-progress";
-import { AnalysisResults } from "@/components/analysis/analysis-results";
+import { useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAnalysisStore } from '@/store/analysis-store';
+import { UrlInput } from '@/components/analysis/url-input';
+import { AnalysisProgress } from '@/components/analysis/analysis-progress';
+import { AnalysisResults } from '@/components/analysis/analysis-results';
 
 const METHODOLOGIES = [
   {
-    num: "01",
-    label: "Design Teardown",
-    desc: "Визуальный стиль, стек, фичи",
+    num: '01',
+    label: 'Design Teardown',
+    desc: 'Визуальный стиль, стек, фичи',
     detail:
-      "Полный визуальный разбор продукта: цветовая палитра, типографика, композиция, используемые CSS/JS-фреймворки, ключевые фичи и UI-паттерны. В конце — подборка элементов, которые стоит адаптировать.",
+      'Полный визуальный разбор продукта: цветовая палитра, типографика, композиция, используемые CSS/JS-фреймворки, ключевые фичи и UI-паттерны. В конце — подборка элементов, которые стоит адаптировать.',
   },
   {
-    num: "02",
-    label: "Deconstruction",
-    desc: "Информационная архитектура",
+    num: '02',
+    label: 'Deconstruction',
+    desc: 'Информационная архитектура',
     detail:
-      "Разбивка продукта на смысловые слои — от навигационной структуры до контентной иерархии. Выявление связей между слоями, скрытых паттернов организации информации и логической архитектуры.",
+      'Разбивка продукта на смысловые слои — от навигационной структуры до контентной иерархии. Выявление связей между слоями, скрытых паттернов организации информации и логической архитектуры.',
   },
   {
-    num: "03",
-    label: "Spec Extraction",
-    desc: "FR, NFR, User Stories",
+    num: '03',
+    label: 'Spec Extraction',
+    desc: 'FR, NFR, User Stories',
     detail:
-      "Автоматическая генерация формальной спецификации: функциональные (FR) и нефункциональные (NFR) требования, User Stories в формате «Как... хочу... чтобы...» с Acceptance Criteria.",
+      'Автоматическая генерация формальной спецификации: функциональные (FR) и нефункциональные (NFR) требования, User Stories в формате «Как... хочу... чтобы...» с Acceptance Criteria.',
   },
   {
-    num: "04",
-    label: "Pattern Mining",
-    desc: "Повторяющиеся паттерны (batch)",
+    num: '04',
+    label: 'Pattern Mining',
+    desc: 'Повторяющиеся паттерны (batch)',
     detail:
-      "Доступен при анализе 2+ URL. Сравнение продуктов, выявление общих паттернов в UX/UI, типовых решений и различий. Группировка по категориям с процентом совпадения и практическими выводами.",
+      'Доступен при анализе 2+ URL. Сравнение продуктов, выявление общих паттернов в UX/UI, типовых решений и различий. Группировка по категориям с процентом совпадения и практическими выводами.',
   },
   {
-    num: "05",
-    label: "Reverse Engineering",
-    desc: "Вероятный технологический стек",
+    num: '05',
+    label: 'Reverse Engineering',
+    desc: 'Вероятный технологический стек',
     detail:
-      "Поведенческий reverse engineering — реконструкция вероятной архитектуры по визуальным признакам: фронтенд-стек, библиотеки анимаций, state-менеджмент, бэкенд и инфраструктура. Каждая оценка сопровождается уровнем уверенности и доказательствами.",
+      'Поведенческий reverse engineering — реконструкция вероятной архитектуры по визуальным признакам: фронтенд-стек, библиотеки анимаций, state-менеджмент, бэкенд и инфраструктура. Каждая оценка сопровождается уровнем уверенности и доказательствами.',
   },
   {
-    num: "06",
-    label: "UX Audit",
-    desc: "Проблемы и рекомендации",
+    num: '06',
+    label: 'UX Audit',
+    desc: 'Проблемы и рекомендации',
     detail:
-      "Поиск UX-проблем с классификацией по severity (critical / major / minor): навигация, доступность, информационная архитектура, когнитивная нагрузка. Каждая проблема — с конкретной рекомендацией по исправлению.",
+      'Поиск UX-проблем с классификацией по severity (critical / major / minor): навигация, доступность, информационная архитектура, когнитивная нагрузка. Каждая проблема — с конкретной рекомендацией по исправлению.',
   },
   {
-    num: "07",
-    label: "Heuristics",
-    desc: "10 эвристик Nielsen",
+    num: '07',
+    label: 'Heuristics',
+    desc: '10 эвристик Nielsen',
     detail:
-      "Оценка по 10 классическим эвристикам Якоба Нильсена (от 1 до 4 баллов каждая): видимость статуса, соответствие стандартам, контроль над действиями, консистентность, предотвращение ошибок и др. Итоговый балл с вердиктом.",
+      'Оценка по 10 классическим эвристикам Якоба Нильсена (от 1 до 4 баллов каждая): видимость статуса, соответствие стандартам, контроль над действиями, консистентность, предотвращение ошибок и др. Итоговый балл с вердиктом.',
   },
   {
-    num: "08",
-    label: "Visual Design System",
-    desc: "VLM-анализ, палитра, DESIGN.md",
+    num: '08',
+    label: 'Visual Design System',
+    desc: 'VLM-анализ, палитра, DESIGN.md',
     detail:
-      "Визуальный анализ через VLM: извлечение цветовой палитры с CSS/Tailwind экспортом, типографика, layout-параметры, компоненты, визуальные эффекты. Автоматическая генерация DESIGN.md документа. Доступно для Pinterest, прямых ссылок на изображения и загруженных файлов.",
+      'Визуальный анализ через VLM: извлечение цветовой палитры с CSS/Tailwind экспортом, типографика, layout-параметры, компоненты, визуальные эффекты. Автоматическая генерация DESIGN.md документа. Доступно для Pinterest, прямых ссылок на изображения и загруженных файлов.',
   },
 ];
 
@@ -75,7 +75,7 @@ export function BentoGrid() {
   useEffect(() => {
     if (isAnalyzing && progressRef.current) {
       const timer = setTimeout(() => {
-        progressRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        progressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 400);
       return () => clearTimeout(timer);
     }
@@ -85,7 +85,7 @@ export function BentoGrid() {
   useEffect(() => {
     if (result && resultsRef.current) {
       const timer = setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 600);
       return () => clearTimeout(timer);
     }
@@ -94,17 +94,20 @@ export function BentoGrid() {
   return (
     <div className="bento-grid mb-16 sm:mb-24">
       {/* URL Input — span 5 */}
-      <div className="bento-card p-4" style={{ gridColumn: "span 5" }}>
+      <div className="bento-card p-4" style={{ gridColumn: 'span 5' }}>
         <UrlInput />
       </div>
 
       {/* Methods — span 3 */}
-      <div className="bento-card p-4" style={{ gridColumn: "span 3" }}>
+      <div className="bento-card p-4" style={{ gridColumn: 'span 3' }}>
         <div className="flex items-center gap-4 mb-4">
           <span className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground/40">
             Методологии
           </span>
-          <span className="text-[11px] sm:text-xs font-medium tabular-nums text-muted-foreground/30" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <span
+            className="text-[11px] sm:text-xs font-medium tabular-nums text-muted-foreground/30"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
             08
           </span>
         </div>
@@ -138,7 +141,7 @@ export function BentoGrid() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.3 }}
             className="bento-card p-4 bento-card-expanded"
-            style={{ gridColumn: "span 8" }}
+            style={{ gridColumn: 'span 8' }}
           >
             <div ref={progressRef}>
               <AnalysisProgress />
@@ -157,7 +160,7 @@ export function BentoGrid() {
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.4 }}
             className="bento-card p-0 bento-card-expanded"
-            style={{ gridColumn: "span 8" }}
+            style={{ gridColumn: 'span 8' }}
           >
             <div ref={resultsRef}>
               <AnalysisResults />

@@ -1,17 +1,22 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, use } from "react";
-import { useAnalysisStore } from "@/store/analysis-store";
-import { AnalysisHistory } from "@/components/analysis/analysis-history";
-import { useScrollReveal } from "@/hooks/use-scroll-reveal";
-import { PageHeader } from "@/app/sections/page-header";
-import { HeroSection } from "@/app/sections/hero-section";
-import { BentoGrid } from "@/app/sections/bento-grid";
-import { PageFooter } from "@/app/sections/page-footer";
+import { useEffect, useRef, use } from 'react';
+import { useAnalysisStore } from '@/store/analysis-store';
+import { AnalysisHistory } from '@/components/analysis/analysis-history';
+import { useScrollReveal } from '@/hooks/use-scroll-reveal';
+import { PageHeader } from '@/app/sections/page-header';
+import { HeroSection } from '@/app/sections/hero-section';
+import { BentoGrid } from '@/app/sections/bento-grid';
+import { PageFooter } from '@/app/sections/page-footer';
 
-export default function Home({ searchParams }: { searchParams: Promise<{ id?: string; rerun?: string }> }) {
+export default function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string; rerun?: string }>;
+}) {
   const params = use(searchParams);
-  const { isAnalyzing, loadHistory, restoreSession, loadAnalysis, rerunAnalysis } = useAnalysisStore();
+  const { isAnalyzing, loadHistory, restoreSession, loadAnalysis, rerunAnalysis } =
+    useAnalysisStore();
   const mainRef = useRef<HTMLDivElement>(null);
 
   // Expose store for debugging
@@ -19,7 +24,7 @@ export default function Home({ searchParams }: { searchParams: Promise<{ id?: st
     (window as any).__store = useAnalysisStore;
   }, []);
 
-  useScrollReveal({ rootMargin: "0px 0px -30px 0px" });
+  useScrollReveal({ rootMargin: '0px 0px -30px 0px' });
 
   // Warn before navigation with unsaved state
   useEffect(() => {
@@ -28,8 +33,8 @@ export default function Home({ searchParams }: { searchParams: Promise<{ id?: st
         e.preventDefault();
       }
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isAnalyzing]);
 
   // Restore session and load history on mount
@@ -42,7 +47,7 @@ export default function Home({ searchParams }: { searchParams: Promise<{ id?: st
   useEffect(() => {
     if (params.rerun) {
       rerunAnalysis(params.rerun);
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, '', '/');
     } else if (params.id) {
       loadAnalysis(params.id);
     }

@@ -1,4 +1,4 @@
-import type { VlmAnalysisResult } from "./vlm-prompt";
+import type { VlmAnalysisResult } from './vlm-prompt';
 
 /**
  * Извлекает структурированный контент из HTML-страницы.
@@ -14,13 +14,13 @@ function extractPageStructure(html: string): {
   bodyText: string;
 } {
   const result = {
-    title: "",
-    metaDescription: "",
+    title: '',
+    metaDescription: '',
     headings: [] as string[],
     ctas: [] as string[],
     navigation: [] as string[],
-    heroText: "",
-    bodyText: "",
+    heroText: '',
+    bodyText: '',
   };
 
   // Title
@@ -28,8 +28,9 @@ function extractPageStructure(html: string): {
   if (titleMatch) result.title = titleMatch[1].trim();
 
   // Meta description
-  const metaMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)
-    || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+  const metaMatch =
+    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
   if (metaMatch) result.metaDescription = metaMatch[1].trim();
 
   // Headings (h1-h3)
@@ -40,7 +41,8 @@ function extractPageStructure(html: string): {
   }
 
   // CTAs — кнопки и ссылки с action-текстом
-  const ctaPatterns = /<(?:button|a)[^>]*>([^<]*(?:купить|buy|зарегистрироваться|sign up|попробовать|try|начать|start|узнать|learn|скачать|download|подключить|get started|заказать|order|связаться|contact)[^<]*)<\/(?:button|a)>/gi;
+  const ctaPatterns =
+    /<(?:button|a)[^>]*>([^<]*(?:купить|buy|зарегистрироваться|sign up|попробовать|try|начать|start|узнать|learn|скачать|download|подключить|get started|заказать|order|связаться|contact)[^<]*)<\/(?:button|a)>/gi;
   while ((m = ctaPatterns.exec(html)) !== null) {
     const text = m[1].trim();
     if (text && !result.ctas.includes(text)) result.ctas.push(text);
@@ -62,13 +64,13 @@ function extractPageStructure(html: string): {
     const body = bodyMatch[1];
     // Убираем script/style/nav/header/footer
     const cleaned = body
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<nav[\s\S]*?<\/nav>/gi, "")
-      .replace(/<header[\s\S]*?<\/header>/gi, "")
-      .replace(/<footer[\s\S]*?<\/footer>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
 
     // Берём первые 500 символов очищенного текста как hero
@@ -104,24 +106,24 @@ export function buildAnalysisPrompt(
   vlmResult?: VlmAnalysisResult | null,
   sourceType?: string,
   imageFileName?: string,
-  techFingerprints?: string | null
+  techFingerprints?: string | null,
 ): string {
   const isBatch = urls.length >= 2;
 
-  let dataSection = "СОБРАННЫЕ ДАННЫЕ:\n\n";
+  let dataSection = 'СОБРАННЫЕ ДАННЫЕ:\n\n';
 
   if (sourceType) {
-    dataSection += `Источник: ${sourceType}${imageFileName ? ` (${imageFileName})` : ""}\n\n`;
+    dataSection += `Источник: ${sourceType}${imageFileName ? ` (${imageFileName})` : ''}\n\n`;
   }
 
   if (vlmResult) {
-    dataSection += "VLM анализ:\n";
+    dataSection += 'VLM анализ:\n';
     dataSection += JSON.stringify(vlmResult, null, 2);
-    dataSection += "\n\n";
+    dataSection += '\n\n';
   }
 
   if (pageContents.length > 0) {
-    dataSection += "Содержимое страниц:\n";
+    dataSection += 'Содержимое страниц:\n';
     for (const page of pageContents) {
       if (page.error) {
         dataSection += `URL: ${page.url} — ОШИБКА: ${page.error}\n`;
@@ -130,23 +132,25 @@ export function buildAnalysisPrompt(
         dataSection += `URL: ${page.url}\n`;
         if (structure.title) dataSection += `Заголовок: ${structure.title}\n`;
         if (structure.metaDescription) dataSection += `Описание: ${structure.metaDescription}\n`;
-        if (structure.headings.length > 0) dataSection += `Заголовки страницы: ${structure.headings.join(" > ")}\n`;
-        if (structure.ctas.length > 0) dataSection += `CTA-кнопки: ${structure.ctas.join(", ")}\n`;
-        if (structure.navigation.length > 0) dataSection += `Навигация: ${structure.navigation.join(", ")}\n`;
+        if (structure.headings.length > 0)
+          dataSection += `Заголовки страницы: ${structure.headings.join(' > ')}\n`;
+        if (structure.ctas.length > 0) dataSection += `CTA-кнопки: ${structure.ctas.join(', ')}\n`;
+        if (structure.navigation.length > 0)
+          dataSection += `Навигация: ${structure.navigation.join(', ')}\n`;
         if (structure.heroText) dataSection += `Герой-блок: ${structure.heroText}\n`;
         if (structure.bodyText) dataSection += `Текст страницы (фрагмент): ${structure.bodyText}\n`;
-        dataSection += "\n";
+        dataSection += '\n';
       }
     }
-    dataSection += "\n";
+    dataSection += '\n';
   }
 
   if (searchResults.length > 0) {
-    dataSection += "Результаты поиска:\n";
+    dataSection += 'Результаты поиска:\n';
     for (const r of searchResults) {
       dataSection += `- ${r.title}: ${r.snippet}\n`;
     }
-    dataSection += "\n";
+    dataSection += '\n';
   }
 
   if (techFingerprints) {
@@ -154,12 +158,13 @@ export function buildAnalysisPrompt(
   }
 
   if (pageContents.length === 0 && searchResults.length === 0 && !vlmResult) {
-    dataSection += "ПРЕДУПРЕЖДЕНИЕ: Нет данных от page_reader/web_search. Анализируй только по URL.\n";
+    dataSection +=
+      'ПРЕДУПРЕЖДЕНИЕ: Нет данных от page_reader/web_search. Анализируй только по URL.\n';
   }
 
   const formatSpec = isBatch
     ? `Формат: { type:"batch", totalUrls:${urls.length}, perUrl:[<single для каждого URL>], patternMining:{groups[{category,patterns[{name,count,percentage,examples,takeaway}]}],summary}, crossCuttingThemes:[] }`
     : `Формат: { type:"${sourceType === 'upload' ? 'upload' : 'single'}", url:"<URL>", teardown:{...}, deconstruction:{...}, spec:{...}, reverseEngineering:{...}, audit:{...}, heuristicEvaluation:{...}, meta:{dataSources:[],confidence:"high|medium|low",caveats:[],missingData:[]} }`;
 
-  return `${ANALYSIS_SYSTEM_PROMPT}\n\n${dataSection}\n${formatSpec}\n\nURL: ${urls.length > 0 ? urls.join(", ") : "(изображение)"}`;
+  return `${ANALYSIS_SYSTEM_PROMPT}\n\n${dataSection}\n${formatSpec}\n\nURL: ${urls.length > 0 ? urls.join(', ') : '(изображение)'}`;
 }

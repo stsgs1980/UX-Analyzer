@@ -8,7 +8,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): 
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
     ),
   ]);
 }
@@ -28,13 +28,19 @@ export async function llmWithFallback(
   // Try primary (ZAI) first
   if (primaryZai) {
     try {
-      const result = await withTimeout(primaryZai.chat.completions.create(params), timeoutMs, label);
+      const result = await withTimeout(
+        primaryZai.chat.completions.create(params),
+        timeoutMs,
+        label,
+      );
       return result as { choices: Array<{ message: { content: string } }> };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes("insufficient_balance") || msg.includes("API request failed")) {
-        console.warn(`[llm] ${label}: ZAI failed (${msg.substring(0, 100)}), falling back to Groq...`);
-        aiProviderRef.current = "groq";
+      if (msg.includes('insufficient_balance') || msg.includes('API request failed')) {
+        console.warn(
+          `[llm] ${label}: ZAI failed (${msg.substring(0, 100)}), falling back to Groq...`,
+        );
+        aiProviderRef.current = 'groq';
       } else {
         throw e; // Non-ZAI error, propagate
       }
@@ -49,7 +55,7 @@ export async function dbSafe<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
     return await fn();
   } catch (e) {
-    console.warn("[db] Operation skipped:", e);
+    console.warn('[db] Operation skipped:', e);
     return null;
   }
 }

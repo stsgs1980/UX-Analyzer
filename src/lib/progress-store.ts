@@ -8,7 +8,7 @@ export interface ProgressEntry {
   step: string;
   message: string;
   progress: number;
-  status: "running" | "completed" | "error";
+  status: 'running' | 'completed' | 'error';
   result?: Record<string, unknown> | null;
   error?: string | null;
   designMd?: string | null;
@@ -22,21 +22,24 @@ export interface ProgressEntry {
 const store = new Map<string, ProgressEntry>();
 
 // Auto-cleanup: remove entries older than 10 minutes every 5 minutes
-if (typeof globalThis !== "undefined") {
-  setInterval(() => {
-    const cutoff = Date.now() - 10 * 60 * 1000;
-    for (const [id, entry] of store) {
-      if (entry.updatedAt < cutoff) store.delete(id);
-    }
-  }, 5 * 60 * 1000).unref();
+if (typeof globalThis !== 'undefined') {
+  setInterval(
+    () => {
+      const cutoff = Date.now() - 10 * 60 * 1000;
+      for (const [id, entry] of store) {
+        if (entry.updatedAt < cutoff) store.delete(id);
+      }
+    },
+    5 * 60 * 1000,
+  ).unref();
 }
 
 export function initProgress(analysisId: string): void {
   store.set(analysisId, {
-    step: "init",
-    message: "Инициализация...",
+    step: 'init',
+    message: 'Инициализация...',
     progress: 0,
-    status: "running",
+    status: 'running',
     updatedAt: Date.now(),
   });
 }
@@ -55,10 +58,10 @@ export function getProgress(analysisId: string): ProgressEntry | undefined {
 export function completeProgress(analysisId: string, result: Record<string, unknown>): void {
   const entry = store.get(analysisId);
   if (entry) {
-    entry.status = "completed";
+    entry.status = 'completed';
     entry.result = result;
-    entry.step = "done";
-    entry.message = "Анализ завершён!";
+    entry.step = 'done';
+    entry.message = 'Анализ завершён!';
     entry.progress = 1;
     entry.updatedAt = Date.now();
   }
@@ -67,7 +70,7 @@ export function completeProgress(analysisId: string, result: Record<string, unkn
 export function errorProgress(analysisId: string, error: string): void {
   const entry = store.get(analysisId);
   if (entry) {
-    entry.status = "error";
+    entry.status = 'error';
     entry.error = error;
     entry.updatedAt = Date.now();
   }

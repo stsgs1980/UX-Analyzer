@@ -1,21 +1,21 @@
-import { create } from "zustand";
-import { toast } from "sonner";
-import type { AnalysisStore } from "./types";
+import { create } from 'zustand';
+import { toast } from 'sonner';
+import type { AnalysisStore } from './types';
 // Re-export for backward compatibility — consumers import `type AnalysisResult` from here
-export type { AnalysisResult, AnalysisProgress } from "./types";
-import { persistResult, restoreResult, clearPersistedResult } from "./persistence";
-import { startPolling, stopPolling } from "./polling";
+export type { AnalysisResult, AnalysisProgress } from './types';
+import { persistResult, restoreResult, clearPersistedResult } from './persistence';
+import { startPolling, stopPolling } from './polling';
 
 export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   // Input
   urls: [],
-  inputUrl: "",
+  inputUrl: '',
 
   // Image upload
   imageBase64: null,
   imageFileName: null,
   addImage: (base64: string, fileName: string) => {
-    set({ imageBase64: base64, imageFileName: fileName, urls: [], inputUrl: "" });
+    set({ imageBase64: base64, imageFileName: fileName, urls: [], inputUrl: '' });
   },
   removeImage: () => {
     set({ imageBase64: null, imageFileName: null });
@@ -33,17 +33,17 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     const trimmed = url.trim();
     if (!trimmed) return;
     let finalUrl = trimmed;
-    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-      finalUrl = "https://" + trimmed;
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      finalUrl = 'https://' + trimmed;
     }
     if (get().urls.includes(finalUrl)) return;
     if (get().urls.length >= 10) return;
-    set({ urls: [...get().urls, finalUrl], inputUrl: "" });
+    set({ urls: [...get().urls, finalUrl], inputUrl: '' });
   },
   removeUrl: (index: number) => {
     set({ urls: get().urls.filter((_, i) => i !== index) });
   },
-  clearUrls: () => set({ urls: [], inputUrl: "" }),
+  clearUrls: () => set({ urls: [], inputUrl: '' }),
   setInputUrl: (url: string) => set({ inputUrl: url }),
 
   // Analysis — restored from sessionStorage after hydration via restoreSession()
@@ -61,13 +61,13 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   history: [],
   loadHistory: async () => {
     try {
-      const res = await fetch("/api/analyses");
+      const res = await fetch('/api/analyses');
       if (res.ok) {
         const data = await res.json();
         set({ history: data });
       }
     } catch (err) {
-      console.error("Failed to load history:", err);
+      console.error('Failed to load history:', err);
     }
   },
   loadAnalysis: async (id: string) => {
@@ -86,27 +86,27 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         }
       }
     } catch (err) {
-      console.error("Failed to load analysis:", err);
+      console.error('Failed to load analysis:', err);
     }
   },
   deleteHistoryItem: async (id: string) => {
     try {
-      await fetch(`/api/analyses?id=${id}`, { method: "DELETE" });
+      await fetch(`/api/analyses?id=${id}`, { method: 'DELETE' });
       const { currentAnalysisId, result } = get();
       if (currentAnalysisId === id && result) {
         set({ result: null, currentAnalysisId: null });
       }
       await get().loadHistory();
     } catch (err) {
-      console.error("Failed to delete history item:", err);
+      console.error('Failed to delete history item:', err);
     }
   },
   clearAllHistory: async () => {
     try {
-      await fetch("/api/analyses?confirm=true", { method: "DELETE" });
+      await fetch('/api/analyses?confirm=true', { method: 'DELETE' });
       set({ history: [], result: null, currentAnalysisId: null });
     } catch (err) {
-      console.error("Failed to clear history:", err);
+      console.error('Failed to clear history:', err);
     }
   },
 
@@ -128,14 +128,15 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       const res = await fetch(`/api/analyses/${id}`);
       if (!res.ok) return;
       const data = await res.json();
-      const urls: string[] = typeof data.urls === "string" ? JSON.parse(data.urls) : data.urls || [];
+      const urls: string[] =
+        typeof data.urls === 'string' ? JSON.parse(data.urls) : data.urls || [];
       if (urls.length === 0) {
-        toast.error("Переанализ возможен только для URL-запросов, не для загруженных изображений");
+        toast.error('Переанализ возможен только для URL-запросов, не для загруженных изображений');
         return;
       }
       set({
         urls,
-        inputUrl: "",
+        inputUrl: '',
         result: null,
         error: null,
         progress: null,
@@ -144,7 +145,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       });
       await get().startAnalysis(true);
     } catch (err) {
-      console.error("Failed to rerun analysis:", err);
+      console.error('Failed to rerun analysis:', err);
     }
   },
 
@@ -165,9 +166,9 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
 
     try {
       // 1. Start analysis — returns immediately with { analysisId }
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           urls,
           imageBase64: imageBase64 || undefined,
@@ -179,7 +180,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       });
 
       if (!response.ok) {
-        let errMsg = "Ошибка запроса";
+        let errMsg = 'Ошибка запроса';
         try {
           const errData = await response.json();
           errMsg = errData.error || errMsg;
@@ -190,13 +191,13 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         return;
       }
 
-      const { analysisId } = await response.json() as { analysisId: string };
+      const { analysisId } = (await response.json()) as { analysisId: string };
       set({ currentAnalysisId: analysisId });
 
       // 2. Start polling
       startPolling(analysisId, set, get);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Неизвестная ошибка";
+      const msg = err instanceof Error ? err.message : 'Неизвестная ошибка';
       set({ isAnalyzing: false, error: msg });
     }
   },
@@ -217,7 +218,15 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   },
 
   setUrlsFromHistory: (urls: string[]) => {
-    set({ urls, inputUrl: "", result: null, error: null, progress: null, imageBase64: null, imageFileName: null });
+    set({
+      urls,
+      inputUrl: '',
+      result: null,
+      error: null,
+      progress: null,
+      imageBase64: null,
+      imageFileName: null,
+    });
   },
 
   setDesignMd: (md: string) => {

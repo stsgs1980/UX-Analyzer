@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Separator } from "@/components/ui/separator";
-import { Layers, ArrowRight } from "lucide-react";
-import { SectionLabel, EmptyState } from "./analysis-shared";
-import type { AnalysisResult } from "@/store/analysis-store";
+import { Separator } from '@/components/ui/separator';
+import { Layers, ArrowRight } from 'lucide-react';
+import { SectionLabel, EmptyState } from './analysis-shared';
+import type { AnalysisResult } from '@/store/analysis-store';
 
 export function DeconstructionTab({ data }: { data: AnalysisResult }) {
   const d = data.deconstruction;

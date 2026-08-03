@@ -1,12 +1,10 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Palette, Cpu, Sparkles, Eye, Lightbulb, ArrowRight,
-} from "lucide-react";
-import { SectionLabel, EmptyState } from "./analysis-shared";
-import type { AnalysisResult } from "@/store/analysis-store";
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Palette, Cpu, Sparkles, Eye, Lightbulb, ArrowRight } from 'lucide-react';
+import { SectionLabel, EmptyState } from './analysis-shared';
+import type { AnalysisResult } from '@/store/analysis-store';
 
 export function TeardownTab({ data }: { data: AnalysisResult }) {
   const t = data.teardown;
@@ -16,7 +14,7 @@ export function TeardownTab({ data }: { data: AnalysisResult }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h2 className="text-xl font-bold">{t.title || "Без названия"}</h2>
+          <h2 className="text-xl font-bold">{t.title || 'Без названия'}</h2>
           <div className="flex items-center gap-2 mt-1">
             {t.source && <Badge variant="secondary">{t.source}</Badge>}
             {t.type && <Badge variant="outline">{t.type}</Badge>}
@@ -41,7 +39,7 @@ export function TeardownTab({ data }: { data: AnalysisResult }) {
           <SectionLabel icon={Cpu}>Технологический стек</SectionLabel>
           <div className="border-l-2 border-l-primary/40 pl-4 py-3">
             <p className="text-sm leading-relaxed whitespace-pre-line">
-              {Array.isArray(t.techStack) ? t.techStack.join(", ") : t.techStack}
+              {Array.isArray(t.techStack) ? t.techStack.join(', ') : t.techStack}
             </p>
           </div>
         </div>
@@ -66,7 +64,9 @@ export function TeardownTab({ data }: { data: AnalysisResult }) {
           <SectionLabel icon={Eye}>Взаимодействия и анимации</SectionLabel>
           <div className="flex flex-wrap gap-2">
             {t.interactions.map((item, i) => (
-              <Badge key={i} variant="secondary" className="text-sm">{item}</Badge>
+              <Badge key={i} variant="secondary" className="text-sm">
+                {item}
+              </Badge>
             ))}
           </div>
         </div>
@@ -77,7 +77,10 @@ export function TeardownTab({ data }: { data: AnalysisResult }) {
           <SectionLabel icon={Lightbulb}>Что стоит украсть</SectionLabel>
           <div className="space-y-2">
             {t.inspiration.map((item, i) => (
-              <div key={i} className="flex items-start gap-3 border-l-2 border-l-primary/40 pl-4 py-2">
+              <div
+                key={i}
+                className="flex items-start gap-3 border-l-2 border-l-primary/40 pl-4 py-2"
+              >
                 <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <span className="text-sm font-medium">{item}</span>
               </div>
