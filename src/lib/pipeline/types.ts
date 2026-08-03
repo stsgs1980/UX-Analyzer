@@ -5,6 +5,7 @@
  */
 
 import type { VlmAnalysisResult } from '@/lib/vlm-prompt';
+import type { SourceAdapter } from '@/lib/source-adapters/types';
 
 export type { VlmAnalysisResult };
 
@@ -48,6 +49,9 @@ export interface PipelineContext {
 
   // ── RSC payload (set by rsc-extract step) ──
   rscPayload: RscExtractResult | null;
+
+  // ── Source adapter (set before pipeline starts) ──
+  adapter: SourceAdapter;
 
   // ── DB (set before pipeline starts) ──
   analysisId: string | null;

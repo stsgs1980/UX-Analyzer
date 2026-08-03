@@ -6,17 +6,8 @@ import { dbSafe } from '@/lib/pipeline/helpers';
 import { runPipeline } from '@/lib/pipeline/runner';
 import type { PipelineContext } from '@/lib/pipeline/types';
 import { updateProgress, completeProgress, errorProgress } from '@/lib/progress-store';
-
-// ── Pipeline steps ──
-import { fetchSourceStep } from '@/lib/pipeline/steps/fetch-source';
-import { fetchPagesStep } from '@/lib/pipeline/steps/fetch-pages';
-import { screenshotStep } from '@/lib/pipeline/steps/screenshot';
-import { vlmAnalysisStep } from '@/lib/pipeline/steps/vlm-analysis';
-import { llmAnalysisStep } from '@/lib/pipeline/steps/llm-analysis';
-import { designMdStep } from '@/lib/pipeline/steps/design-md';
-import { dbSaveStep } from '@/lib/pipeline/steps/db-save';
-import { referenceCodeStep } from '@/lib/pipeline/steps/reference-code';
-import { rscExtractStep } from '@/lib/pipeline/steps/rsc-extract';
+import { createAdapter } from '@/lib/source-adapters';
+import { buildPipeline } from '@/lib/pipeline/pipeline-builder';
 
 export interface RunAnalysisPipelineOptions {
   urls: string[];
@@ -145,6 +136,8 @@ export async function runAnalysisPipeline(opts: RunAnalysisPipelineOptions) {
     }
 
     // ── Build pipeline context ──
+    const adapter = createAdapter({ urls, imageBase64 });
+
     const ctx: PipelineContext = {
       urls,
       imageBase64,
@@ -172,25 +165,20 @@ export async function runAnalysisPipeline(opts: RunAnalysisPipelineOptions) {
       codePreviewHtml: null,
       rscPayload: null,
       analysisId,
+      adapter,
       closeWriter: async () => {
         /* no-op in polling mode */
       },
       send,
     };
 
+    // ── Build dynamic pipeline based on adapter capabilities ──
+    const groups = buildPipeline({ adapter, generateReferenceCode, extractRscPayload });
+
     // ── Run steps (sequential + parallel groups) ──
     await runPipeline({
       ctx,
-      groups: [
-        fetchSourceStep,
-        fetchPagesStep,
-        screenshotStep,
-        vlmAnalysisStep,
-        llmAnalysisStep,
-        [designMdStep, rscExtractStep],
-        referenceCodeStep,
-        dbSaveStep,
-      ],
+      groups,
       onError: async (ctx, error) => {
         const msg = error instanceof Error ? error.message : String(error);
         if (db && ctx.analysisId) {
