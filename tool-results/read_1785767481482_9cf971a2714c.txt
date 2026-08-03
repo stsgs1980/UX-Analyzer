@@ -1,0 +1,871 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState } from "react";
+     4→     4→import { useAnalysisStore, type AnalysisResult } from "@/store/analysis-store";
+     5→     5→import { Badge } from "@/components/ui/badge";
+     6→     6→import { ScrollArea } from "@/components/ui/scroll-area";
+     7→     7→import { Separator } from "@/components/ui/separator";
+     8→     8→import { Button } from "@/components/ui/button";
+     9→     9→import {
+    10→    10→  Palette,
+    11→    11→  Layers,
+    12→    12→  FileText,
+    13→    13→  GitCompare,
+    14→    14→  Cpu,
+    15→    15→  AlertTriangle,
+    16→    16→  ClipboardCheck,
+    17→    17→  Copy,
+    18→    18→  Download,
+    19→    19→  Lightbulb,
+    20→    20→  Wrench,
+    21→    21→  Eye,
+    22→    22→  Sparkles,
+    23→    23→  BarChart3,
+    24→    24→  ArrowRight,
+    25→    25→  User,
+    26→    26→  Target,
+    27→    27→  CheckSquare,
+    28→    28→  ScanSearch,
+    29→    29→  ChevronDown,
+    30→    30→  ChevronUp,
+    31→    31→  Server,
+    32→    32→  FileDown,
+    33→    33→} from "lucide-react";
+    34→    34→import { buildMarkdownExport } from "@/lib/export-markdown";
+    35→    35→import { DesignSystemTab } from "./design-system-tab";
+    36→    36→import { ReferenceCodeTab } from "./reference-code-tab";
+    37→    37→import { RscPayloadTab } from "./rsc-payload-tab";
+    38→    38→import { toast } from "sonner";
+    39→    39→import { motion, AnimatePresence } from "framer-motion";
+    40→    40→
+    41→    41→const CONFIDENCE_COLORS: Record<string, string> = {
+    42→    42→  high: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    43→    43→  medium: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    44→    44→  low: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+    45→    45→};
+    46→    46→
+    47→    47→const SEVERITY_COLORS: Record<string, string> = {
+    48→    48→  critical: "bg-red-500/15 text-red-700 dark:text-red-400",
+    49→    49→  major: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
+    50→    50→  minor: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-600",
+    51→    51→};
+    52→    52→
+    53→    53→function ConfidenceBadge({ confidence }: { confidence: string }) {
+    54→    54→  return (
+    55→    55→    <Badge variant="outline" className={CONFIDENCE_COLORS[confidence] || ""}>
+    56→    56→      {confidence}
+    57→    57→    </Badge>
+    58→    58→  );
+    59→    59→}
+    60→    60→
+    61→    61→function SeverityBadge({ severity }: { severity: string }) {
+    62→    62→  return (
+    63→    63→    <Badge variant="outline" className={SEVERITY_COLORS[severity] || ""}>
+    64→    64→      {severity}
+    65→    65→    </Badge>
+    66→    66→  );
+    67→    67→}
+    68→    68→
+    69→    69→export function SectionLabel({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
+    70→    70→  return (
+    71→    71→    <div className="flex items-center gap-2 mb-3">
+    72→    72→      <Icon className="h-4 w-4 text-muted-foreground" />
+    73→    73→      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+    74→    74→        {children}
+    75→    75→      </h3>
+    76→    76→    </div>
+    77→    77→  );
+    78→    78→}
+    79→    79→
+    80→    80→function CopyButton({ text }: { text: string }) {
+    81→    81→  const handleCopy = () => {
+    82→    82→    navigator.clipboard.writeText(text);
+    83→    83→    toast.success("JSON скопирован в буфер обмена");
+    84→    84→  };
+    85→    85→  return (
+    86→    86→    <Button variant="outline" size="sm" onClick={handleCopy}>
+    87→    87→      <Copy className="h-3.5 w-3.5 mr-1.5" />
+    88→    88→      Копировать JSON
+    89→    89→    </Button>
+    90→    90→  );
+    91→    91→}
+    92→    92→
+    93→    93→function ExportMarkdownButton({ result, designMd }: { result: AnalysisResult; designMd: string | null }) {
+    94→    94→  const handleExport = () => {
+    95→    95→    const md = buildMarkdownExport(result, designMd);
+    96→    96→    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    97→    97→    const url = URL.createObjectURL(blob);
+    98→    98→    const a = document.createElement("a");
+    99→    99→    a.href = url;
+   100→   100→    const filename = result.teardown?.title
+   101→   101→      ? `${result.teardown.title.replace(/[^a-zA-Z0-9а-яА-Я]/g, "-").toLowerCase()}.md`
+   102→   102→      : `analysis-${Date.now()}.md`;
+   103→   103→    a.download = filename;
+   104→   104→    a.click();
+   105→   105→    URL.revokeObjectURL(url);
+   106→   106→    toast.success("Markdown отчёт скачан");
+   107→   107→  };
+   108→   108→  return (
+   109→   109→    <Button variant="outline" size="sm" onClick={handleExport}>
+   110→   110→      <FileDown className="h-3.5 w-3.5 mr-1.5" />
+   111→   111→      Экспорт Markdown
+   112→   112→    </Button>
+   113→   113→  );
+   114→   114→}
+   115→   115→
+   116→   116→function DownloadButton({ data }: { data: unknown }) {
+   117→   117→  const handleDownload = () => {
+   118→   118→    const blob = new Blob([JSON.stringify(data, null, 2)], {
+   119→   119→      type: "application/json",
+   120→   120→    });
+   121→   121→    const url = URL.createObjectURL(blob);
+   122→   122→    const a = document.createElement("a");
+   123→   123→    a.href = url;
+   124→   124→    a.download = `analysis-${Date.now()}.json`;
+   125→   125→    a.click();
+   126→   126→    URL.revokeObjectURL(url);
+   127→   127→  };
+   128→   128→  return (
+   129→   129→    <Button variant="outline" size="sm" onClick={handleDownload}>
+   130→   130→      <Download className="h-3.5 w-3.5 mr-1.5" />
+   131→   131→      Скачать JSON
+   132→   132→    </Button>
+   133→   133→  );
+   134→   134→}
+   135→   135→
+   136→   136→/* ─── TEARDOWN TAB ─── */
+   137→   137→function TeardownTab({ data }: { data: AnalysisResult }) {
+   138→   138→  const t = data.teardown;
+   139→   139→  if (!t) return <EmptyState message="Данные teardown недоступны" />;
+   140→   140→
+   141→   141→  return (
+   142→   142→    <div className="space-y-6">
+   143→   143→      {/* Header */}
+   144→   144→      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+   145→   145→        <div>
+   146→   146→          <h2 className="text-xl font-bold">{t.title || "Без названия"}</h2>
+   147→   147→          <div className="flex items-center gap-2 mt-1">
+   148→   148→            {t.source && <Badge variant="secondary">{t.source}</Badge>}
+   149→   149→            {t.type && <Badge variant="outline">{t.type}</Badge>}
+   150→   150→            {t.author && (
+   151→   151→              <span className="text-sm text-muted-foreground">by {t.author}</span>
+   152→   152→            )}
+   153→   153→          </div>
+   154→   154→        </div>
+   155→   155→      </div>
+   156→   156→
+   157→   157→      <Separator />
+   158→   158→
+   159→   159→      {/* Visual Style */}
+   160→   160→      {t.visualStyle && (
+   161→   161→        <div>
+   162→   162→          <SectionLabel icon={Palette}>Визуальный стиль</SectionLabel>
+   163→   163→          <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   164→   164→            <p className="text-sm leading-relaxed whitespace-pre-line">
+   165→   165→              {t.visualStyle}
+   166→   166→            </p>
+   167→   167→          </div>
+   168→   168→        </div>
+   169→   169→      )}
+   170→   170→
+   171→   171→      {/* Tech Stack */}
+   172→   172→      {t.techStack && (
+   173→   173→        <div>
+   174→   174→          <SectionLabel icon={Cpu}>Технологический стек</SectionLabel>
+   175→   175→          <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   176→   176→            <p className="text-sm leading-relaxed whitespace-pre-line">
+   177→   177→              {Array.isArray(t.techStack) ? t.techStack.join(", ") : t.techStack}
+   178→   178→            </p>
+   179→   179→          </div>
+   180→   180→        </div>
+   181→   181→      )}
+   182→   182→
+   183→   183→      {/* Features */}
+   184→   184→      {t.features && t.features.length > 0 && (
+   185→   185→        <div>
+   186→   186→          <SectionLabel icon={Sparkles}>Ключевые фичи</SectionLabel>
+   187→   187→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+   188→   188→            {t.features.map((f, i) => (
+   189→   189→              <div
+   190→   190→                key={i}
+   191→   191→                className="flex items-start gap-2 border-l border-l-white/10 pl-3 py-2"
+   192→   192→              >
+   193→   193→                <ArrowRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+   194→   194→                <span className="text-sm">{f}</span>
+   195→   195→              </div>
+   196→   196→            ))}
+   197→   197→          </div>
+   198→   198→        </div>
+   199→   199→      )}
+   200→   200→
+   201→   201→      {/* Interactions */}
+   202→   202→      {t.interactions && t.interactions.length > 0 && (
+   203→   203→        <div>
+   204→   204→          <SectionLabel icon={Eye}>Взаимодействия и анимации</SectionLabel>
+   205→   205→          <div className="flex flex-wrap gap-2">
+   206→   206→            {t.interactions.map((item, i) => (
+   207→   207→              <Badge key={i} variant="secondary" className="text-sm">
+   208→   208→                {item}
+   209→   209→              </Badge>
+   210→   210→            ))}
+   211→   211→          </div>
+   212→   212→        </div>
+   213→   213→      )}
+   214→   214→
+   215→   215→      {/* Inspiration — "What to steal" */}
+   216→   216→      {t.inspiration && t.inspiration.length > 0 && (
+   217→   217→        <div>
+   218→   218→          <SectionLabel icon={Lightbulb}>Что стоит украсть</SectionLabel>
+   219→   219→          <div className="space-y-2">
+   220→   220→            {t.inspiration.map((item, i) => (
+   221→   221→              <div
+   222→   222→                key={i}
+   223→   223→                className="flex items-start gap-3 border-l-2 border-l-primary/40 pl-4 py-2"
+   224→   224→              >
+   225→   225→                <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+   226→   226→                <span className="text-sm font-medium">{item}</span>
+   227→   227→              </div>
+   228→   228→            ))}
+   229→   229→          </div>
+   230→   230→        </div>
+   231→   231→      )}
+   232→   232→    </div>
+   233→   233→  );
+   234→   234→}
+   235→   235→
+   236→   236→/* ─── DECONSTRUCTION TAB ─── */
+   237→   237→function DeconstructionTab({ data }: { data: AnalysisResult }) {
+   238→   238→  const d = data.deconstruction;
+   239→   239→  if (!d?.layers) return <EmptyState message="Данные deconstruction недоступны" />;
+   240→   240→
+   241→   241→  return (
+   242→   242→    <div className="space-y-6">
+   243→   243→      <div>
+   244→   244→        <SectionLabel icon={Layers}>Смысловые слои продукта</SectionLabel>
+   245→   245→        <div className="space-y-4">
+   246→   246→          {d.layers.map((layer, i) => (
+   247→   247→            <div key={i} className="border-l-2 border-l-primary/40 pl-4 py-3">
+   248→   248→              <h4 className="text-base font-semibold flex items-center gap-2 mb-2">
+   249→   249→                <span className="text-primary text-xs font-bold">
+   250→   250→                  {i + 1}.
+   251→   251→                </span>
+   252→   252→                {layer.name}
+   253→   253→              </h4>
+   254→   254→              <p className="text-sm leading-relaxed whitespace-pre-line">
+   255→   255→                {layer.analysis}
+   256→   256→              </p>
+   257→   257→            </div>
+   258→   258→          ))}
+   259→   259→        </div>
+   260→   260→      </div>
+   261→   261→
+   262→   262→      {d.connections && (
+   263→   263→        <>
+   264→   264→          <Separator />
+   265→   265→          <div>
+   266→   266→            <SectionLabel icon={ArrowRight}>Связи между слоями</SectionLabel>
+   267→   267→            <div className="border-l-2 border-l-white/10 pl-4 py-3">
+   268→   268→              <p className="text-sm leading-relaxed">{d.connections}</p>
+   269→   269→            </div>
+   270→   270→          </div>
+   271→   271→        </>
+   272→   272→      )}
+   273→   273→    </div>
+   274→   274→  );
+   275→   275→}
+   276→   276→
+   277→   277→/* ─── SPEC TAB ─── */
+   278→   278→function SpecTab({ data }: { data: AnalysisResult }) {
+   279→   279→  const s = data.spec;
+   280→   280→  if (!s) return <EmptyState message="Данные спецификации недоступны" />;
+   281→   281→
+   282→   282→  const hasFR = s.functionalRequirements && s.functionalRequirements.length > 0;
+   283→   283→  const hasNFR = s.nonFunctionalRequirements && s.nonFunctionalRequirements.length > 0;
+   284→   284→  const hasUS = s.userStories && s.userStories.length > 0;
+   285→   285→
+   286→   286→  if (!hasFR && !hasNFR && !hasUS) {
+   287→   287→    return <EmptyState message="Спецификация пуста" />;
+   288→   288→  }
+   289→   289→
+   290→   290→  return (
+   291→   291→    <div className="space-y-6">
+   292→   292→      {/* Functional Requirements */}
+   293→   293→      {hasFR && (
+   294→   294→        <div>
+   295→   295→          <SectionLabel icon={CheckSquare}>Функциональные требования (FR)</SectionLabel>
+   296→   296→          <ScrollArea className="max-h-80">
+   297→   297→            <div className="space-y-2 pr-4">
+   298→   298→              {s.functionalRequirements!.map((fr) => (
+   299→   299→                <div
+   300→   300→                  key={fr.id}
+   301→   301→                  className="flex items-start gap-3 border-b border-white/5 pb-3"
+   302→   302→                >
+   303→   303→                  <Badge variant="outline" className="shrink-0 font-mono text-xs">
+   304→   304→                    {fr.id}
+   305→   305→                  </Badge>
+   306→   306→                  <p className="text-sm">{fr.statement}</p>
+   307→   307→                </div>
+   308→   308→              ))}
+   309→   309→            </div>
+   310→   310→          </ScrollArea>
+   311→   311→        </div>
+   312→   312→      )}
+   313→   313→
+   314→   314→      {/* Non-Functional Requirements */}
+   315→   315→      {hasNFR && (
+   316→   316→        <div>
+   317→   317→          <SectionLabel icon={BarChart3}>Нефункциональные требования (NFR)</SectionLabel>
+   318→   318→          <ScrollArea className="max-h-80">
+   319→   319→            <div className="space-y-2 pr-4">
+   320→   320→              {s.nonFunctionalRequirements!.map((nfr) => (
+   321→   321→                <div
+   322→   322→                  key={nfr.id}
+   323→   323→                  className="flex items-start gap-3 border-b border-white/5 pb-3"
+   324→   324→                >
+   325→   325→                  <Badge variant="outline" className="shrink-0 font-mono text-xs">
+   326→   326→                    {nfr.id}
+   327→   327→                  </Badge>
+   328→   328→                  <div className="flex-1">
+   329→   329→                    <p className="text-sm">{nfr.statement}</p>
+   330→   330→                    <Badge variant="secondary" className="mt-1 text-xs">
+   331→   331→                      {nfr.category}
+   332→   332→                    </Badge>
+   333→   333→                  </div>
+   334→   334→                </div>
+   335→   335→              ))}
+   336→   336→            </div>
+   337→   337→          </ScrollArea>
+   338→   338→        </div>
+   339→   339→      )}
+   340→   340→
+   341→   341→      {/* User Stories */}
+   342→   342→      {hasUS && (
+   343→   343→        <div>
+   344→   344→          <SectionLabel icon={User}>User Stories</SectionLabel>
+   345→   345→          <div className="space-y-4">
+   346→   346→            {s.userStories!.map((us) => (
+   347→   347→              <div key={us.id} className="border-b border-white/5 pb-4">
+   348→   348→                <h4 className="text-sm font-mono font-semibold mb-1">{us.id}</h4>
+   349→   349→                <p className="text-sm italic text-muted-foreground mb-2">
+   350→   350→                  Как <strong>{us.asRole}</strong>, я хочу{" "}
+   351→   351→                  <strong>{us.iWant}</strong>, чтобы <strong>{us.soThat}</strong>.
+   352→   352→                </p>
+   353→   353→                {us.acceptanceCriteria && us.acceptanceCriteria.length > 0 && (
+   354→   354→                  <div>
+   355→   355→                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+   356→   356→                      Acceptance Criteria
+   357→   357→                    </p>
+   358→   358→                    <ul className="space-y-1">
+   359→   359→                      {us.acceptanceCriteria.map((ac, i) => (
+   360→   360→                        <li
+   361→   361→                          key={i}
+   362→   362→                          className="text-sm text-muted-foreground flex items-start gap-2"
+   363→   363→                        >
+   364→   364→                          <Target className="h-3 w-3 mt-1 shrink-0" />
+   365→   365→                          {ac}
+   366→   366→                        </li>
+   367→   367→                      ))}
+   368→   368→                    </ul>
+   369→   369→                  </div>
+   370→   370→                )}
+   371→   371→              </div>
+   372→   372→            ))}
+   373→   373→          </div>
+   374→   374→        </div>
+   375→   375→      )}
+   376→   376→    </div>
+   377→   377→  );
+   378→   378→}
+   379→   379→
+   380→   380→/* ─── PATTERN MINING TAB (batch only) ─── */
+   381→   381→function PatternMiningTab({ data }: { data: AnalysisResult }) {
+   382→   382→  const pm = data.patternMining;
+   383→   383→  if (!pm || !pm.groups || pm.groups.length === 0) {
+   384→   384→    return (
+   385→   385→      <EmptyState message="Pattern Mining доступен только при анализе 2+ URL" />
+   386→   386→    );
+   387→   387→  }
+   388→   388→
+   389→   389→  return (
+   390→   390→    <div className="space-y-6">
+   391→   391→      {pm.summary && (
+   392→   392→        <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   393→   393→          <p className="text-sm font-medium">{pm.summary}</p>
+   394→   394→        </div>
+   395→   395→      )}
+   396→   396→
+   397→   397→      {pm.groups.map((group, gi) => (
+   398→   398→        <div key={gi}>
+   399→   399→          <SectionLabel icon={GitCompare}>{group.category}</SectionLabel>
+   400→   400→          <div className="space-y-3">
+   401→   401→            {group.patterns.map((pattern, pi) => (
+   402→   402→              <div key={pi} className="border-b border-white/5 pb-3">
+   403→   403→                <div className="flex items-center justify-between mb-2">
+   404→   404→                  <h4 className="text-base font-semibold">{pattern.name}</h4>
+   405→   405→                  <div className="flex items-center gap-2">
+   406→   406→                    <Badge variant="secondary">
+   407→   407→                      {pattern.count}/{data.type === "batch" ? String((data as Record<string, unknown>).totalUrls ?? "?") : "?"}
+   408→   408→                    </Badge>
+   409→   409→                    <Badge>{pattern.percentage}%</Badge>
+   410→   410→                  </div>
+   411→   411→                </div>
+   412→   412→                <div className="space-y-2">
+   413→   413→                  {pattern.examples && pattern.examples.length > 0 && (
+   414→   414→                    <div className="flex flex-wrap gap-1">
+   415→   415→                      {pattern.examples.map((ex, i) => (
+   416→   416→                        <Badge key={i} variant="outline" className="text-xs">
+   417→   417→                          {ex}
+   418→   418→                        </Badge>
+   419→   419→                      ))}
+   420→   420→                    </div>
+   421→   421→                  )}
+   422→   422→                  <p className="text-sm text-muted-foreground">{pattern.takeaway}</p>
+   423→   423→                </div>
+   424→   424→              </div>
+   425→   425→            ))}
+   426→   426→          </div>
+   427→   427→        </div>
+   428→   428→      ))}
+   429→   429→    </div>
+   430→   430→  );
+   431→   431→}
+   432→   432→
+   433→   433→/* ─── REVERSE ENGINEERING TAB ─── */
+   434→   434→function ReverseEngineeringTab({ data }: { data: AnalysisResult }) {
+   435→   435→  const re = data.reverseEngineering;
+   436→   436→  if (!re) return <EmptyState message="Данные reverse engineering недоступны" />;
+   437→   437→
+   438→   438→  const categories = [
+   439→   439→    { key: "frontend", label: "Фронтенд-стек", icon: Layers },
+   440→   440→    { key: "animationLib", label: "Библиотеки анимаций", icon: Sparkles },
+   441→   441→    { key: "dataLayer", label: "Слой данных / State", icon: FileText },
+   442→   442→    { key: "backend", label: "Бэкенд-намёки", icon: Cpu },
+   443→   443→    { key: "infra", label: "Инфраструктура", icon: Wrench },
+   444→   444→  ] as const;
+   445→   445→
+   446→   446→  return (
+   447→   447→    <div className="space-y-4">
+   448→   448→      <p className="text-sm text-muted-foreground">
+   449→   449→        Поведенческий reverse engineering — реконструкция вероятной архитектуры
+   450→   450→        по визуальным признакам без доступа к исходному коду.
+   451→   451→      </p>
+   452→   452→      <div className="space-y-4">
+   453→   453→        {categories.map(({ key, label, icon: Icon }) => {
+   454→   454→          const item = re[key];
+   455→   455→          if (!item) return null;
+   456→   456→          return (
+   457→   457→            <div key={key} className="border-l-2 border-l-white/10 pl-4 py-3">
+   458→   458→              <div className="flex items-center justify-between mb-1">
+   459→   459→                <h4 className="text-base font-semibold flex items-center gap-2">
+   460→   460→                  <Icon className="h-4 w-4" />
+   461→   461→                  {label}
+   462→   462→                </h4>
+   463→   463→                <ConfidenceBadge confidence={item.confidence || "low"} />
+   464→   464→              </div>
+   465→   465→              <div className="space-y-1">
+   466→   466→                <p className="font-medium text-sm">{item.stack}</p>
+   467→   467→                <p className="text-sm text-muted-foreground">{item.evidence}</p>
+   468→   468→              </div>
+   469→   469→            </div>
+   470→   470→          );
+   471→   471→        })}
+   472→   472→      </div>
+   473→   473→    </div>
+   474→   474→  );
+   475→   475→}
+   476→   476→
+   477→   477→/* ─── AUDIT TAB ─── */
+   478→   478→function AuditTab({ data }: { data: AnalysisResult }) {
+   479→   479→  const a = data.audit;
+   480→   480→  if (!a?.problems || a.problems.length === 0) {
+   481→   481→    return <EmptyState message="Данные аудита недоступны" />;
+   482→   482→  }
+   483→   483→
+   484→   484→  const severityBorder = (severity: string) => {
+   485→   485→    if (severity === "critical") return "border-l-red-500";
+   486→   486→    if (severity === "major") return "border-l-orange-500";
+   487→   487→    return "border-l-white/10";
+   488→   488→  };
+   489→   489→
+   490→   490→  return (
+   491→   491→    <div className="space-y-4">
+   492→   492→      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+   493→   493→        <span>Всего проблем: <strong>{a.problems.length}</strong></span>
+   494→   494→        <span className="flex items-center gap-1">
+   495→   495→          <span className="inline-block h-2 w-4 bg-red-500" /> Critical:{" "}
+   496→   496→          <strong>{a.problems.filter((p) => p.severity === "critical").length}</strong>
+   497→   497→        </span>
+   498→   498→        <span className="flex items-center gap-1">
+   499→   499→          <span className="inline-block h-2 w-4 bg-orange-500" /> Major:{" "}
+   500→   500→          <strong>{a.problems.filter((p) => p.severity === "major").length}</strong>
+   501→   501→        </span>
+   502→   502→        <span className="flex items-center gap-1">
+   503→   503→          <span className="inline-block h-2 w-4 bg-yellow-500" /> Minor:{" "}
+   504→   504→          <strong>{a.problems.filter((p) => p.severity === "minor").length}</strong>
+   505→   505→        </span>
+   506→   506→      </div>
+   507→   507→
+   508→   508→      <ScrollArea className="max-h-[600px]">
+   509→   509→        <div className="space-y-3 pr-4">
+   510→   510→          {a.problems.map((problem, i) => (
+   511→   511→            <div
+   512→   512→              key={i}
+   513→   513→              className={`border-l-2 pl-4 py-3 ${severityBorder(problem.severity)}`}
+   514→   514→            >
+   515→   515→              <div className="flex items-start justify-between gap-2 mb-2">
+   516→   516→                <h4 className="text-sm font-semibold flex items-center gap-2">
+   517→   517→                  <AlertTriangle className="h-4 w-4 shrink-0" />
+   518→   518→                  <Badge variant="outline" className="text-xs">
+   519→   519→                    {problem.area}
+   520→   520→                  </Badge>
+   521→   521→                </h4>
+   522→   522→                <SeverityBadge severity={problem.severity} />
+   523→   523→              </div>
+   524→   524→              <div className="space-y-2">
+   525→   525→                <p className="text-sm">{problem.description}</p>
+   526→   526→                <div className="border-l border-l-white/10 pl-3 py-2 mt-2">
+   527→   527→                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+   528→   528→                    Рекомендация
+   529→   529→                  </p>
+   530→   530→                  <p className="text-sm text-muted-foreground">
+   531→   531→                    {problem.recommendation}
+   532→   532→                  </p>
+   533→   533→                </div>
+   534→   534→              </div>
+   535→   535→            </div>
+   536→   536→          ))}
+   537→   537→        </div>
+   538→   538→      </ScrollArea>
+   539→   539→    </div>
+   540→   540→  );
+   541→   541→}
+   542→   542→
+   543→   543→/* ─── HEURISTIC EVALUATION TAB ─── */
+   544→   544→function HeuristicTab({ data }: { data: AnalysisResult }) {
+   545→   545→  const he = data.heuristicEvaluation;
+   546→   546→  if (!he?.scores || he.scores.length === 0) {
+   547→   547→    return <EmptyState message="Данные эвристической оценки недоступны" />;
+   548→   548→  }
+   549→   549→
+   550→   550→  const avg = he.averageScore ?? 0;
+   551→   551→
+   552→   552→  const scoreColor = (s: number) => {
+   553→   553→    if (s >= 3.5) return "text-emerald-600 dark:text-emerald-400";
+   554→   554→    if (s >= 2.5) return "text-amber-600 dark:text-amber-400";
+   555→   555→    if (s >= 1.5) return "text-orange-600 dark:text-orange-400";
+   556→   556→    return "text-red-600 dark:text-red-400";
+   557→   557→  };
+   558→   558→
+   559→   559→  const scoreBg = (s: number) => {
+   560→   560→    if (s >= 3.5) return "bg-emerald-500";
+   561→   561→    if (s >= 2.5) return "bg-amber-500";
+   562→   562→    if (s >= 1.5) return "bg-orange-500";
+   563→   563→    return "bg-red-500";
+   564→   564→  };
+   565→   565→
+   566→   566→  return (
+   567→   567→    <div className="space-y-6">
+   568→   568→      {/* Average score */}
+   569→   569→      <div className="border-l-2 border-l-primary/40 pl-4 py-3">
+   570→   570→        <div className="flex flex-col sm:flex-row items-center gap-4">
+   571→   571→          <div className="flex items-baseline gap-1">
+   572→   572→            <span className={`text-4xl font-bold ${scoreColor(avg)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+   573→   573→              {avg.toFixed(1)}
+   574→   574→            </span>
+   575→   575→            <span className="text-lg text-muted-foreground">/4.0</span>
+   576→   576→          </div>
+   577→   577→          <div className="text-center sm:text-left">
+   578→   578→            <p className="font-semibold text-lg">Общий балл</p>
+   579→   579→            <p className="text-sm text-muted-foreground mt-1">
+   580→   580→              {he.verdict || "Без вердикта"}
+   581→   581→            </p>
+   582→   582→          </div>
+   583→   583→        </div>
+   584→   584→      </div>
+   585→   585→
+   586→   586→      {/* Individual scores */}
+   587→   587→      <div className="space-y-3">
+   588→   588→        {he.scores.map((item, i) => (
+   589→   589→          <div key={i} className="border-b border-white/5 pb-3 pt-3">
+   590→   590→            <div className="flex items-start justify-between gap-4">
+   591→   591→              <div className="flex-1 space-y-1">
+   592→   592→                <p className="text-sm font-medium">{item.heuristic}</p>
+   593→   593→                {item.observations && (
+   594→   594→                  <p className="text-xs text-muted-foreground">{item.observations}</p>
+   595→   595→                )}
+   596→   596→                {item.recommendation && (
+   597→   597→                    <p className="text-xs text-muted-foreground italic mt-1">
+   598→   598→                      {item.recommendation}
+   599→   599→                    </p>
+   600→   600→                )}
+   601→   601→              </div>
+   602→   602→              <div className="flex flex-col items-center gap-1 shrink-0">
+   603→   603→                <span className={`text-lg font-bold ${scoreColor(item.score)}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+   604→   604→                  {item.score}
+   605→   605→                </span>
+   606→   606→                <div className="flex gap-0.5">
+   607→   607→                  {[0, 1, 2, 3].map((dot) => (
+   608→   608→                    <span
+   609→   609→                      key={dot}
+   610→   610→                      className={`inline-block h-1.5 w-5 ${
+   611→   611→                        dot < item.score ? scoreBg(item.score) : "bg-muted"
+   612→   612→                      }`}
+   613→   613→                    />
+   614→   614→                  ))}
+   615→   615→                </div>
+   616→   616→              </div>
+   617→   617→            </div>
+   618→   618→          </div>
+   619→   619→        ))}
+   620→   620→      </div>
+   621→   621→    </div>
+   622→   622→  );
+   623→   623→}
+   624→   624→
+   625→   625→/* ─── EMPTY STATE ─── */
+   626→   626→function EmptyState({ message }: { message: string }) {
+   627→   627→  return (
+   628→   628→    <div className="py-12 text-center">
+   629→   629→      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" aria-hidden="true" />
+   630→   630→      <p className="text-muted-foreground">{message}</p>
+   631→   631→    </div>
+   632→   632→  );
+   633→   633→}
+   634→   634→
+   635→   635→/* ─── META INFO ─── */
+   636→   636→function MetaInfo({ data }: { data: AnalysisResult }) {
+   637→   637→  const m = data.meta;
+   638→   638→  if (!m) return null;
+   639→   639→
+   640→   640→  return (
+   641→   641→    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+   642→   642→      {m.dataSources?.map((ds) => (
+   643→   643→        <Badge key={ds} variant="outline" className="text-xs">
+   644→   644→          {ds}
+   645→   645→        </Badge>
+   646→   646→      ))}
+   647→   647→      {m.confidence && <ConfidenceBadge confidence={m.confidence} />}
+   648→   648→      {m.caveats?.map((c, i) => (
+   649→   649→        <span key={i} className="text-xs text-muted-foreground italic">
+   650→   650→          {c}
+   651→   651→        </span>
+   652→   652→      ))}
+   653→   653→    </div>
+   654→   654→  );
+   655→   655→}
+   656→   656→
+   657→   657→/* ─── MAIN RESULTS COMPONENT ─── */
+   658→   658→export function AnalysisResults() {
+   659→   659→  const { result, reset, designMdContent } = useAnalysisStore();
+   660→   660→  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+   661→   661→
+   662→   662→  if (!result) return null;
+   663→   663→
+   664→   664→  const isBatch = result.type === "batch";
+   665→   665→  const jsonStr = JSON.stringify(result, null, 2);
+   666→   666→
+   667→   667→  type CardConfig = {
+   668→   668→    id: string;
+   669→   669→    label: string;
+   670→   670→    icon: React.ElementType;
+   671→   671→    colSpan: number;
+   672→   672→    summary: string;
+   673→   673→    tab: React.ComponentType<{ data: AnalysisResult }>;
+   674→   674→    condition?: boolean;
+   675→   675→  };
+   676→   676→
+   677→   677→  const cards: CardConfig[] = [
+   678→   678→    {
+   679→   679→      id: "teardown",
+   680→   680→      label: "Teardown",
+   681→   681→      icon: Palette,
+   682→   682→      colSpan: 1,
+   683→   683→      summary: result.teardown?.title || "Визуальный разбор продукта",
+   684→   684→      tab: TeardownTab,
+   685→   685→    },
+   686→   686→    {
+   687→   687→      id: "deconstruction",
+   688→   688→      label: "Deconstruction",
+   689→   689→      icon: Layers,
+   690→   690→      colSpan: 1,
+   691→   691→      summary: result.deconstruction?.layers
+   692→   692→        ? `${result.deconstruction.layers.length} смысловых слоёв`
+   693→   693→        : "Смысловые слои продукта",
+   694→   694→      tab: DeconstructionTab,
+   695→   695→    },
+   696→   696→    {
+   697→   697→      id: "spec",
+   698→   698→      label: "Spec",
+   699→   699→      icon: FileText,
+   700→   700→      colSpan: 1,
+   701→   701→      summary: result.spec?.functionalRequirements
+   702→   702→        ? `${result.spec.functionalRequirements.length} FR`
+   703→   703→        : "Спецификация",
+   704→   704→      tab: SpecTab,
+   705→   705→    },
+   706→   706→    ...(isBatch
+   707→   707→      ? [
+   708→   708→          {
+   709→   709→            id: "patterns",
+   710→   710→            label: "Patterns",
+   711→   711→            icon: GitCompare,
+   712→   712→            colSpan: 1,
+   713→   713→            summary: result.patternMining?.summary || "Паттерны между URL",
+   714→   714→            tab: PatternMiningTab,
+   715→   715→            condition: isBatch,
+   716→   716→          },
+   717→   717→        ]
+   718→   718→      : []),
+   719→   719→    {
+   720→   720→      id: "reverse",
+   721→   721→      label: "Reverse Eng.",
+   722→   722→      icon: Cpu,
+   723→   723→      colSpan: 1,
+   724→   724→      summary: "Реконструкция архитектуры",
+   725→   725→      tab: ReverseEngineeringTab,
+   726→   726→    },
+   727→   727→    {
+   728→   728→      id: "audit",
+   729→   729→      label: "Audit",
+   730→   730→      icon: AlertTriangle,
+   731→   731→      colSpan: 2,
+   732→   732→      summary: result.audit?.problems
+   733→   733→        ? `${result.audit.problems.length} проблем`
+   734→   734→        : "Аудит UI/UX",
+   735→   735→      tab: AuditTab,
+   736→   736→    },
+   737→   737→    {
+   738→   738→      id: "heuristic",
+   739→   739→      label: "Heuristics",
+   740→   740→      icon: ClipboardCheck,
+   741→   741→      colSpan: 1,
+   742→   742→      summary: result.heuristicEvaluation?.averageScore
+   743→   743→        ? `Балл ${result.heuristicEvaluation.averageScore.toFixed(1)}`
+   744→   744→        : "Эвристическая оценка",
+   745→   745→      tab: HeuristicTab,
+   746→   746→    },
+   747→   747→    {
+   748→   748→      id: "design-system",
+   749→   749→      label: "Design System",
+   750→   750→      icon: ScanSearch,
+   751→   751→      colSpan: 3,
+   752→   752→      summary: "Цвета, типографика, компоненты",
+   753→   753→      tab: DesignSystemTab,
+   754→   754→    },
+   755→   755→    {
+   756→   756→      id: "reference-code",
+   757→   757→      label: "Reference Pipeline",
+   758→   758→      icon: Wrench,
+   759→   759→      colSpan: 3,
+   760→   760→      summary: "Пошаговый pipeline с кодом",
+   761→   761→      tab: ReferenceCodeTab,
+   762→   762→      condition: !!result.referenceCode || !!useAnalysisStore.getState().referenceCodeContent,
+   763→   763→    },
+   764→   764→    {
+   765→   765→      id: "rsc-payload",
+   766→   766→      label: "RSC Payload",
+   767→   767→      icon: Server,
+   768→   768→      colSpan: 2,
+   769→   769→      summary: result.rscPayload?.isNextJs
+   770→   770→        ? `Next.js: ${result.rscPayload.serverComponents?.length || 0} SC, ${result.rscPayload.clientComponents?.length || 0} CC`
+   771→   771→        : "RSC payload extraction",
+   772→   772→      tab: RscPayloadTab,
+   773→   773→      condition: !!result.rscPayload || !!useAnalysisStore.getState().rscPayloadContent,
+   774→   774→    },
+   775→   775→  ];
+   776→   776→
+   777→   777→  const toggleCard = (id: string) => {
+   778→   778→    setExpandedCard((prev) => (prev === id ? null : id));
+   779→   779→  };
+   780→   780→
+   781→   781→  return (
+   782→   782→    <div className="space-y-4">
+   783→   783→      {/* Header bar */}
+   784→   784→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   785→   785→        <div className="space-y-1">
+   786→   786→          <h2 className="text-xl font-bold flex items-center gap-2">
+   787→   787→            <Sparkles className="h-5 w-5 text-primary" />
+   788→   788→            Результат анализа
+   789→   789→            <Badge variant="secondary">
+   790→   790→              {result.sourceType === "upload"
+   791→   791→                ? "Upload"
+   792→   792→                : result.sourceType === "pinterest"
+   793→   793→                ? "Pinterest"
+   794→   794→                : isBatch
+   795→   795→                ? "Batch"
+   796→   796→                : "Single"}
+   797→   797→            </Badge>
+   798→   798→          </h2>
+   799→   799→          <MetaInfo data={result} />
+   800→   800→        </div>
+   801→   801→        <div className="flex items-center gap-2 shrink-0">
+   802→   802→          <CopyButton text={jsonStr} />
+   803→   803→          <DownloadButton data={result} />
+   804→   804→          <ExportMarkdownButton result={result} designMd={designMdContent} />
+   805→   805→          <Button variant="ghost" size="sm" onClick={reset}>
+   806→   806→            Новый анализ
+   807→   807→          </Button>
+   808→   808→        </div>
+   809→   809→      </div>
+   810→   810→
+   811→   811→      {/* Bento Grid */}
+   812→   812→      <div className="bento-grid">
+   813→   813→        <AnimatePresence mode="wait">
+   814→   814→          {cards.filter(c => c.condition !== false).map((card) => {
+   815→   815→            const isExpanded = expandedCard === card.id;
+   816→   816→            const Icon = card.icon;
+   817→   817→            const TabComponent = card.tab;
+   818→   818→
+   819→   819→            return (
+   820→   820→              <motion.div
+   821→   821→                key={card.id}
+   822→   822→                layout
+   823→   823→                initial={{ opacity: 0, scale: 0.95 }}
+   824→   824→                animate={{ opacity: 1, scale: 1 }}
+   825→   825→                exit={{ opacity: 0, scale: 0.95 }}
+   826→   826→                transition={{ duration: 0.2, ease: "easeInOut" }}
+   827→   827→                className={`bento-card p-4 cursor-pointer ${
+   828→   828→                  isExpanded ? "bento-card-expanded" : ""
+   829→   829→                }`}
+   830→   830→                style={
+   831→   831→                  isExpanded
+   832→   832→                    ? undefined
+   833→   833→                    : { gridColumn: `span ${card.colSpan}` }
+   834→   834→                }
+   835→   835→                onClick={() => toggleCard(card.id)}
+   836→   836→              >
+   837→   837→                {/* Card Header */}
+   838→   838→                <div className="flex items-center justify-between mb-2">
+   839→   839→                  <div className="flex items-center gap-2">
+   840→   840→                    <Icon className="h-4 w-4 text-emerald-400" />
+   841→   841→                    <span className="text-sm font-medium">{card.label}</span>
+   842→   842→                  </div>
+   843→   843→                  {isExpanded ? (
+   844→   844→                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+   845→   845→                  ) : (
+   846→   846→                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+   847→   847→                  )}
+   848→   848→                </div>
+   849→   849→
+   850→   850→                {/* Card Content */}
+   851→   851→                {isExpanded ? (
+   852→   852→                  <motion.div
+   853→   853→                    initial={{ opacity: 0 }}
+   854→   854→                    animate={{ opacity: 1 }}
+   855→   855→                    transition={{ delay: 0.1 }}
+   856→   856→                  >
+   857→   857→                    <TabComponent data={result} />
+   858→   858→                  </motion.div>
+   859→   859→                ) : (
+   860→   860→                  <p className="text-xs text-muted-foreground truncate">
+   861→   861→                    {card.summary}
+   862→   862→                  </p>
+   863→   863→                )}
+   864→   864→              </motion.div>
+   865→   865→            );
+   866→   866→          })}
+   867→   867→        </AnimatePresence>
+   868→   868→      </div>
+   869→   869→    </div>
+   870→   870→  );
+   871→   871→}
