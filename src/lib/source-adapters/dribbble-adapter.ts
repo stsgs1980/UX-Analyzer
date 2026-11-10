@@ -9,6 +9,7 @@
 
 import type { SourceAdapter, FetchContext, FetchResult } from './types';
 import { withTimeout } from '@/lib/pipeline/helpers';
+import { readPage } from '@/lib/page-reader';
 import { downloadImageAsBase64 } from '@/lib/pinterest';
 
 export class DribbbleAdapter implements SourceAdapter {
@@ -27,12 +28,8 @@ export class DribbbleAdapter implements SourceAdapter {
     }
 
     try {
-      // Use ZAI page_reader to fetch the shot page
-      const r = await withTimeout(
-        ctx.zai.functions.invoke('page_reader', { url }),
-        15000,
-        'dribbble-page-reader',
-      );
+      // Use the provider page_reader, falling back to native fetch
+      const r = await readPage(ctx.zai, ctx.nativeProvider ?? ctx.zai, url);
 
       const html = (r as any)?.data?.html || '';
       const title = (r as any)?.data?.title || '';

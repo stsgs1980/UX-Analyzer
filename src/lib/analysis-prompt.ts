@@ -101,7 +101,13 @@ export const ANALYSIS_SYSTEM_PROMPT = `Ты — UX/UI аналитик. Проа
 
 export function buildAnalysisPrompt(
   urls: string[],
-  pageContents: Array<{ url: string; title: string; content: string; error?: string }>,
+  pageContents: Array<{
+    url: string;
+    title: string;
+    content: string;
+    rawHtml?: string;
+    error?: string;
+  }>,
   searchResults: Array<{ url: string; title: string; snippet: string }>,
   vlmResult?: VlmAnalysisResult | null,
   sourceType?: string,
@@ -128,7 +134,9 @@ export function buildAnalysisPrompt(
       if (page.error) {
         dataSection += `URL: ${page.url} — ОШИБКА: ${page.error}\n`;
       } else {
-        const structure = extractPageStructure(page.content);
+        // Structure extraction works on raw HTML - the pipeline keeps it in rawHtml,
+        // while `content` is already stripped of tags.
+        const structure = extractPageStructure(page.rawHtml || page.content);
         dataSection += `URL: ${page.url}\n`;
         if (structure.title) dataSection += `Заголовок: ${structure.title}\n`;
         if (structure.metaDescription) dataSection += `Описание: ${structure.metaDescription}\n`;
@@ -139,6 +147,11 @@ export function buildAnalysisPrompt(
           dataSection += `Навигация: ${structure.navigation.join(', ')}\n`;
         if (structure.heroText) dataSection += `Герой-блок: ${structure.heroText}\n`;
         if (structure.bodyText) dataSection += `Текст страницы (фрагмент): ${structure.bodyText}\n`;
+        // Fallback: no HTML structure available - pass the plain text excerpt so
+        // the model still has something to analyse.
+        if (!structure.bodyText && !structure.heroText && page.content) {
+          dataSection += `Текст страницы (фрагмент): ${page.content.slice(0, 3000)}\n`;
+        }
         dataSection += '\n';
       }
     }

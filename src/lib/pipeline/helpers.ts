@@ -14,12 +14,12 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): 
 }
 
 /**
- * Try LLM call with primary provider, fallback to localProvider on ZAI errors.
+ * Try LLM call with primary provider, then fall back through the provider chain.
  * Handles: insufficient_balance, API errors, timeouts.
  */
 export async function llmWithFallback(
-  zai: any,
   primaryZai: any,
+  fallbacks: Array<{ name: string; provider: any }>,
   params: { messages: Array<{ role: string; content: string }>; thinking?: { type: string } },
   timeoutMs: number,
   label: string,
@@ -38,16 +38,32 @@ export async function llmWithFallback(
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes('insufficient_balance') || msg.includes('API request failed')) {
         console.warn(
-          `[llm] ${label}: ZAI failed (${msg.substring(0, 100)}), falling back to Groq...`,
+          `[llm] ${label}: ZAI failed (${msg.substring(0, 100)}), trying fallback providers...`,
         );
-        aiProviderRef.current = 'groq';
+        aiProviderRef.current = 'zai-failed';
       } else {
         throw e; // Non-ZAI error, propagate
       }
     }
   }
-  // Fallback to localProvider (Groq)
-  return withTimeout(zai.chat.completions.create(params), timeoutMs, `${label} (Groq)`);
+  // Fallback chain: Groq -> configured OpenAI-compatible endpoint
+  let lastError: unknown;
+  for (const fallback of fallbacks) {
+    try {
+      const result = await withTimeout(
+        fallback.provider.chat.completions.create(params),
+        timeoutMs,
+        `${label} (${fallback.name})`,
+      );
+      aiProviderRef.current = fallback.name;
+      return result as { choices: Array<{ message: { content: string } }> };
+    } catch (e) {
+      lastError = e;
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[llm] ${label}: ${fallback.name} failed (${msg.substring(0, 120)})`);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(`${label}: no provider available`);
 }
 
 /** Safely run a DB operation, returning null on failure. */

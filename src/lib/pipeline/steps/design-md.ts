@@ -5,7 +5,6 @@
 
 import type { PipelineStep } from '../types';
 import { buildDesignMdPrompt } from '@/lib/design-md-prompt';
-import { localProvider } from '@/lib/gemini-provider';
 import { llmWithFallback, dbSafe } from '../helpers';
 
 export const designMdStep: PipelineStep = {
@@ -45,8 +44,8 @@ export const designMdStep: PipelineStep = {
       const designMdPrompt = buildDesignMdPrompt(ctx.vlmResult, sourceDescription);
 
       const designMdCompletion = await llmWithFallback(
-        localProvider,
         ctx.primaryZai,
+        ctx.providerChain,
         {
           messages: [{ role: 'user', content: designMdPrompt }],
           thinking: { type: 'disabled' },

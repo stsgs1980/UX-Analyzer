@@ -58,6 +58,8 @@ export interface FetchContext {
   imageFileName?: string;
   /** ZAI SDK instance for page_reader, web_search etc. */
   zai: any;
+  /** Provider used to read pages when the primary provider cannot (native fetch). */
+  nativeProvider?: any;
 }
 
 /** Unified output from any adapter's fetch() */

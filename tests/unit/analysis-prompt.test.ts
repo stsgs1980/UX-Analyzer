@@ -68,4 +68,25 @@ describe("buildAnalysisPrompt", () => {
     expect(result).toContain("A great product");
     expect(result).toContain("Welcome");
   });
+
+  it("extracts structure from rawHtml when content is already stripped of tags", () => {
+    // The pipeline stores raw HTML in rawHtml and tag-free text in content.
+    const rawHtml =
+      "<html><head><title>Linear</title><meta name='description' content='Issue tracking'></head><body><h1>Plan</h1><p>Build</p></body></html>";
+    const pages = [
+      { url: "https://linear.app", title: "Linear", content: "Linear Plan Build", rawHtml },
+    ];
+    const result = buildAnalysisPrompt(["https://linear.app"], pages, []);
+    expect(result).toContain("Linear");
+    expect(result).toContain("Issue tracking");
+    expect(result).toContain("Plan");
+  });
+
+  it("falls back to the plain text excerpt when no HTML structure is available", () => {
+    const pages = [
+      { url: "https://example.com", title: "Example", content: "Уникальный текст страницы" },
+    ];
+    const result = buildAnalysisPrompt(["https://example.com"], pages, []);
+    expect(result).toContain("Уникальный текст страницы");
+  });
 });

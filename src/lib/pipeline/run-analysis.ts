@@ -1,5 +1,6 @@
 import ZAI from 'z-ai-web-dev-sdk';
 import { localProvider } from '@/lib/gemini-provider';
+import { genericProvider } from '@/lib/openai-provider';
 import { db } from '@/lib/db';
 import { validateExternalUrl } from '@/lib/url-safety';
 import { dbSafe } from '@/lib/pipeline/helpers';
@@ -135,8 +136,17 @@ export async function runAnalysisPipeline(opts: RunAnalysisPipelineOptions) {
       console.log(`[analyze][${analysisId}] warn: ZAI недоступен, использую Groq (без vision).`);
     }
 
+    // ── Provider chain: primary (ZAI) -> Groq -> configured OpenAI-compatible ──
+    const providerChain: Array<{ name: string; provider: any }> = [
+      { name: 'Groq', provider: localProvider },
+      ...(genericProvider.isConfigured()
+        ? [{ name: genericProvider.name, provider: genericProvider }]
+        : []),
+    ];
+    const nativeProvider = genericProvider.isConfigured() ? genericProvider : localProvider;
+
     // ── Build pipeline context ──
-    const adapter = createAdapter({ urls, imageBase64 });
+    const adapter = createAdapter({ urls, imageBase64, zai, nativeProvider });
 
     const ctx: PipelineContext = {
       urls,
@@ -149,6 +159,8 @@ export async function runAnalysisPipeline(opts: RunAnalysisPipelineOptions) {
       zai,
       primaryZai,
       aiProviderRef,
+      providerChain,
+      nativeProvider,
       pageContents: [],
       searchResults: [],
       extractedImageBase64: null,

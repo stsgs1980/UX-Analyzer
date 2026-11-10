@@ -9,6 +9,7 @@
 
 import type { SourceAdapter, FetchContext, FetchResult } from './types';
 import { withTimeout } from '@/lib/pipeline/helpers';
+import { readPage } from '@/lib/page-reader';
 import { isPinterestPin, fetchPinterestOembed, downloadImageAsBase64 } from '@/lib/pinterest';
 
 /** Maximum number of pins to process from a board */
@@ -31,11 +32,7 @@ export class PinterestBoardAdapter implements SourceAdapter {
 
     try {
       // Step 1: Fetch the board page to extract pin URLs
-      const r = await withTimeout(
-        ctx.zai.functions.invoke('page_reader', { url }),
-        15000,
-        'pinterest-board-reader',
-      );
+      const r = await readPage(ctx.zai, ctx.nativeProvider ?? ctx.zai, url);
 
       const html = (r as any)?.data?.html || '';
       const title = (r as any)?.data?.title || 'Pinterest Board';

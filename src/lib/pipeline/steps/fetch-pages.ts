@@ -6,6 +6,7 @@
 
 import type { PipelineStep, PageContent, SearchResult } from '../types';
 import { withTimeout } from '../helpers';
+import { readPage, invokeSearch } from '@/lib/page-reader';
 import { extractTechFingerprints, formatFingerprintsForPrompt } from '@/lib/tech-fingerprints';
 
 export const fetchPagesStep: PipelineStep = {
@@ -43,11 +44,7 @@ export const fetchPagesStep: PipelineStep = {
         const results = await Promise.allSettled(
           ctx.urls.map(async (url) => {
             try {
-              const r = await withTimeout(
-                ctx.zai.functions.invoke('page_reader', { url }),
-                15000,
-                `page_reader(${url})`,
-              );
+              const r = await readPage(ctx.primaryZai, ctx.nativeProvider, url);
               const rawHtml = (r as any).data?.html || '';
 
               // Extract tech fingerprints from first successful page
@@ -88,11 +85,7 @@ export const fetchPagesStep: PipelineStep = {
           ctx.urls.slice(0, 2).map(async (url) => {
             const hostname = new URL(url).hostname;
             const query = `${hostname} design UI UX review`;
-            const items = await withTimeout(
-              ctx.zai.functions.invoke('web_search', { query, num: 3 }),
-              10000,
-              `web_search(${hostname})`,
-            );
+            const items = await invokeSearch(ctx.primaryZai, ctx.nativeProvider, query, 3);
             return ((items || []) as Array<{ url: string; name: string; snippet: string }>)
               .slice(0, 2)
               .map((r) => ({ url: r.url, title: r.name, snippet: r.snippet }));

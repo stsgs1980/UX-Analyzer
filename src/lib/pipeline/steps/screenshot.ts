@@ -18,12 +18,23 @@ export const screenshotStep: PipelineStep = {
 
     const firstUrl = ctx.urls[0];
     console.log('[screenshot] Trying to capture:', firstUrl);
-    const ss = await captureScreenshot(firstUrl);
-    if (ss) {
-      ctx.extractedImageBase64 = ss.base64;
-      ctx.extractedImageUrl = firstUrl;
-      ctx.dataSources.push('screenshot');
-      console.log('[screenshot] Captured via', ss.source);
+    try {
+      const ss = await captureScreenshot(firstUrl);
+      if (ss) {
+        ctx.extractedImageBase64 = ss.base64;
+        ctx.extractedImageUrl = firstUrl;
+        ctx.dataSources.push('screenshot');
+        console.log('[screenshot] Captured via', ss.source);
+      }
+    } catch (e) {
+      // Optional step: a failed capture must not abort the whole analysis.
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[screenshot] Capture failed, continuing without image:', msg);
+      ctx.send({
+        type: 'warn',
+        message: `Скриншот не получен (${msg}), анализ без визуальных данных.`,
+        analysisId: ctx.analysisId,
+      });
     }
   },
 };

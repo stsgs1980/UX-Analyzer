@@ -8,6 +8,22 @@ const VIEWPORT_WIDTH = 1280;
 const VIEWPORT_HEIGHT = 800;
 
 /**
+ * Base URL of the local screenshot service (Playwright via gateway on port 3010).
+ * Empty by default - without it the local service is skipped and thum.io is used.
+ */
+const LOCAL_SERVICE_BASE = (process.env.SCREENSHOT_SERVICE_BASE_URL || '').replace(/\/+$/, '');
+
+/**
+ * Build the thum.io URL for a target page.
+ *
+ * The target URL must NOT be percent-encoded: thum.io rejects encoded slashes
+ * ("Invalid URI: the encoded slash character is not allowed" -> HTTP 400).
+ */
+export function buildThumIoUrl(url: string): string {
+  return `https://image.thum.io/get/width/${VIEWPORT_WIDTH}/crop/${VIEWPORT_HEIGHT}/${url}`;
+}
+
+/**
  * Fetch image from local screenshot service (Playwright via gateway on port 3010).
  * Returns base64 data URI or null.
  */
@@ -15,8 +31,12 @@ async function fetchLocalScreenshot(
   url: string,
   fullPage: boolean,
 ): Promise<{ base64: string; source: string } | null> {
+  if (!LOCAL_SERVICE_BASE) {
+    console.log('[screenshot] Local service not configured, skipping');
+    return null;
+  }
   try {
-    let screenshotUrl = `/screenshot?url=${encodeURIComponent(url)}&width=${VIEWPORT_WIDTH}`;
+    let screenshotUrl = `${LOCAL_SERVICE_BASE}/screenshot?url=${encodeURIComponent(url)}&width=${VIEWPORT_WIDTH}`;
     if (fullPage) {
       screenshotUrl += `&fullPage=true`;
     } else {
@@ -54,7 +74,7 @@ async function fetchLocalScreenshot(
  */
 async function fetchThumIo(url: string): Promise<{ base64: string; source: string } | null> {
   try {
-    const thumbUrl = `https://image.thum.io/get/width/${VIEWPORT_WIDTH}/crop/${VIEWPORT_HEIGHT}/${encodeURIComponent(url)}`;
+    const thumbUrl = buildThumIoUrl(url);
     const res = await fetch(thumbUrl, {
       signal: AbortSignal.timeout(25000),
     });

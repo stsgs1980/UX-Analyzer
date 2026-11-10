@@ -5,7 +5,6 @@
  */
 
 import type { PipelineContext } from '../types';
-import { localProvider } from '@/lib/gemini-provider';
 import { llmWithFallback } from '../helpers';
 
 /**
@@ -112,8 +111,8 @@ export async function generateCodePreview(
 
   try {
     const completion = await llmWithFallback(
-      localProvider,
       ctx.primaryZai,
+      ctx.providerChain,
       {
         messages: [{ role: 'user', content: previewPrompt }],
         thinking: { type: 'disabled' },

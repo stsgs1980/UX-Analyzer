@@ -68,3 +68,10 @@ db/*.db-journal
 
 # Examples (reference only, not tracked)
 /examples/
+# Local tooling artifacts
+.agents/
+.idea/
+.superpowers/
+test-results/
+docs/superpowers/
+prisma/prisma/

@@ -9,7 +9,6 @@
 
 import type { PipelineStep } from '../types';
 import { buildReferenceCodePrompt } from '@/lib/reference-code-prompt';
-import { localProvider } from '@/lib/gemini-provider';
 import { llmWithFallback } from '../helpers';
 import { extractJson } from '@/lib/extract-json';
 import { formatReferenceCode } from './format-reference-code';
@@ -56,8 +55,8 @@ export const referenceCodeStep: PipelineStep = {
 
     try {
       const completion = await llmWithFallback(
-        localProvider,
         ctx.primaryZai,
+        ctx.providerChain,
         {
           messages: [{ role: 'user', content: prompt }],
           thinking: { type: 'disabled' },

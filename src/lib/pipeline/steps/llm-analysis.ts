@@ -5,8 +5,7 @@
 
 import type { PipelineStep } from '../types';
 import { buildAnalysisPrompt } from '@/lib/analysis-prompt';
-import { localProvider } from '@/lib/gemini-provider';
-import { extractJson } from '@/lib/extract-json';
+import { extractJson, parseJsonWithRepair } from '@/lib/extract-json';
 import { withTimeout, llmWithFallback } from '../helpers';
 
 export const llmAnalysisStep: PipelineStep = {
@@ -30,6 +29,12 @@ export const llmAnalysisStep: PipelineStep = {
       ctx.sourceType,
       ctx.imageFileName || undefined,
       ctx.techFingerprintsText,
+    );
+
+    console.log(
+      `[llm] prompt length: ${prompt.length} | pages: ${ctx.pageContents.length} | ` +
+        `rawHtml: ${ctx.pageContents.map((p) => (p.rawHtml || '').length).join(',')} | ` +
+        `content: ${ctx.pageContents.map((p) => (p.content || '').length).join(',')}`,
     );
 
     // Heartbeat: send progress updates while LLM is thinking (0.52 → 0.80)
@@ -62,8 +67,8 @@ export const llmAnalysisStep: PipelineStep = {
 
     try {
       const completion = await llmWithFallback(
-        localProvider,
         ctx.primaryZai,
+        ctx.providerChain,
         {
           messages: [{ role: 'user', content: prompt }],
           thinking: { type: 'disabled' },
@@ -76,6 +81,7 @@ export const llmAnalysisStep: PipelineStep = {
       clearInterval(heartbeatInterval);
 
       let responseText = (completion as any)?.choices?.[0]?.message?.content || '';
+      console.log(`[llm] response length: ${responseText.length}`);
 
       // Parse JSON
       ctx.send({
@@ -89,9 +95,13 @@ export const llmAnalysisStep: PipelineStep = {
       const jsonStr = extractJson(responseText);
 
       let analysisResult: Record<string, unknown>;
-      try {
-        analysisResult = JSON.parse(jsonStr);
-      } catch {
+      const parsed = parseJsonWithRepair(responseText);
+      if (parsed.data) {
+        analysisResult = parsed.data;
+        if (parsed.repaired) {
+          console.warn('[llm] LLM response was truncated, JSON repaired');
+        }
+      } else {
         analysisResult = {
           type: ctx.hasImageUpload ? 'upload' : ctx.urls.length === 1 ? 'single' : 'batch',
           url: ctx.urls?.[0],
@@ -99,6 +109,10 @@ export const llmAnalysisStep: PipelineStep = {
           rawResponse: responseText.substring(0, 2000),
         };
       }
+      console.log(
+        `[llm] parsed keys: ${Object.keys(analysisResult).join(',')} | ` +
+          `teardown: ${JSON.stringify(analysisResult.teardown)?.slice(0, 60)}`,
+      );
 
       // Merge VLM results
       if (ctx.vlmResult) {

@@ -24,6 +24,10 @@ export interface PipelineContext {
   zai: any;
   primaryZai: any;
   aiProviderRef: { current: string };
+  /** Ordered fallback chain used for LLM calls: Groq -> OpenAI-compatible. */
+  providerChain: Array<{ name: string; provider: any }>;
+  /** Provider used for page reading when the primary provider cannot read pages. */
+  nativeProvider: any;
 
   // ── Collected data (populated by steps) ──
   pageContents: PageContent[];
