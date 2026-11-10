@@ -6,7 +6,7 @@
 import type { PipelineStep } from '../types';
 import type { VlmAnalysisResult } from '@/lib/vlm-prompt';
 import { VLM_ANALYSIS_PROMPT } from '@/lib/vlm-prompt';
-import { withTimeout } from '../helpers';
+import { withTimeout, isProviderDisabled } from '../helpers';
 import { extractJson } from '@/lib/extract-json';
 
 export const vlmAnalysisStep: PipelineStep = {
@@ -18,7 +18,7 @@ export const vlmAnalysisStep: PipelineStep = {
     const visionProviders: Array<{ name: string; provider: any }> = [
       ...(ctx.primaryZai ? [{ name: 'ZAI', provider: ctx.primaryZai }] : []),
       ...(ctx.providerChain || []).filter((p) => p.provider?.chat?.completions?.createVision),
-    ];
+    ].filter((p) => !isProviderDisabled(p.name));
 
     if (!ctx.extractedImageBase64 || visionProviders.length === 0) {
       ctx.dataSources.push('url_only');

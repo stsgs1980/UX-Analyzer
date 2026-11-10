@@ -119,7 +119,7 @@ function extractFriendlyError(err: unknown): string {
   if (msg.includes('insufficient_balance'))
     return 'Недостаточно средств на балансе ZAI. Пополните баланс и попробуйте снова.';
   if (msg.includes('FREE_LIMIT') || msg.includes('rate limit') || msg.includes('status 429'))
-    return 'Лимит запросов к AI-провайдеру исчерпан (бесплатный тариф — 1 запрос в 45 секунд). Повторите через минуту или укажите API-ключ в .env.';
+    return 'Провайдер ограничил частоту запросов (бесплатный тариф Pollinations — 1 ответ в 45 секунд). Подождите минуту или получите бесплатный ключ: https://enter.pollinations.ai/?ref=classic';
   if (msg.includes('output_token_limit_exceeded'))
     return 'Модель исчерпала лимит токенов ответа. Увеличьте AI_MAX_TOKENS или уменьшите AI_REASONING_EFFORT.';
   if (msg.includes('timed out')) return msg;
